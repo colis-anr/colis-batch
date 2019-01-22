@@ -1,0 +1,15 @@
+## Emacs specific
+*~
+*#
+
+## Dune specific
+.merlin
+/_build
+/*.install
+
+## OPAM specific
+/_opam
+
+## Project specific
+/bin
+/doc

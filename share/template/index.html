@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CoLiS-Language Covering</title>
+
+    <meta charset="utf-8" />
+    <style type="text/css">
+      body {
+	  width: 80%;
+	  margin: auto;
+      }
+      table {
+	  width: 100%;
+      }
+      tbody {
+	  height: 300px;
+      }
+      td {
+	  text-align: center;
+      }
+      td.success {
+	  background: #afa;
+      }
+      td.error {
+	  background: #faa;
+      }
+      th, td.empty {
+	  background: #ddd;
+      }
+      .verbatim {
+	  text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CoLiS-Language Covering</h1>
+
+    <dl>
+      <dt>Number of scripts</dt>
+      <dd>{{infos.total}}</dd>
+
+      <dt>Timeout</dt>
+      <dd>{{parameters.timeout}}s</dd>
+    </dl>
+
+    <h2>Summary</h2>
+
+    <table>
+      <thead>
+	<tr>
+	  <th>Parsing</th>
+	  <th>Conversion</th>
+	  <th>Execution</th>
+	  <th>Result</th>
+	</tr>
+      </thead>
+
+      <tbody>
+	<!-- Success to verify a clean script -->
+	<tr style="height: {{verification.success.percentage}}%;">
+	  <td class="success" rowspan="5">
+	    Success<br/>
+	    {{parsing.success.number}} ({{parsing.success.percentage}}%)
+	  </td>
+	  <td class="success" rowspan="4">
+	    Success<br/>
+	    {{conversion.success.number}} ({{conversion.success.percentage}}%)
+	  </td>
+	  <td class="success" rowspan="2">
+	    Success<br/>
+	    {{execution.success.number}} ({{execution.success.percentage}}%)
+	  </td>
+	  <td class="success" rowspan="1">
+	    <a href="#verification-success">Success</a><br/>
+	    {{verification.success.number}} ({{verification.success.percentage}}%)
+	  </td>
+	</tr>
+
+	<!-- Success to verify a wrong script -->
+	<tr style="height: {{verification.error.percentage}}%;">
+	  <td class="error">
+	    <a href="#verification-error">Error</a><br/>
+	    {{verification.error.number}} ({{verification.error.percentage}}%)
+	  </td>
+	</tr>
+
+	<!-- Timeout during execution -->
+	<tr style="height: {{execution.timeout.percentage}}%;">
+	  <td class="error">
+	    <a href="#execution-timeout">Timeout</a><br/>
+	    {{execution.timeout.number}} ({{execution.timeout.percentage}}%)
+	  </td>
+	  <td class="empty"></td>
+	</tr>
+
+	<!-- Error during execution -->
+	<tr style="height: {{execution.error.percentage}}%;">
+	  <td class="error">
+	    <a href="#execution-error">Error</a><br/>
+	    {{execution.error.number}} ({{execution.error.percentage}}%)
+	  </td>
+	  <td class="empty"></td>
+	</tr>
+
+	<!-- Error during conversion -->
+	<tr style="height: {{conversion.error.percentage}}%;">
+	  <td class="error">
+	    <a href="#conversion-error">Error</a><br/>
+	    {{conversion.error.number}} ({{conversion.error.percentage}}%)
+	  </td>
+	  <td class="empty" colspan="2"></td>
+	</tr>
+
+	<!-- Error during parsing -->
+	<tr style="height: {{parsing.error.percentage}}%;">
+	  <td class="error">
+	    <a href="#parsing-error">Error</a><br/>
+	    {{parsing.error.number}} ({{parsing.error.percentage}}%)
+	  </td>
+	  <td class="empty" colspan="3"></td>
+	</tr>
+
+	<!-- Unexpected error -->
+	<tr style="height: {{other_error.percentage}}%;">
+	  <td class="error">
+	    <a href="#unexpected-error">Unexpected error</a><br/>
+	    {{other_error.number}} ({{other_error.percentage}}%)
+	  </td>
+	  <td class="empty" colspan="3"></td>
+	</tr>
+      </tbody>
+    </table>
+
+    <h2>Details</h2>
+
+    <table>
+      <thead>
+	<tr>
+	  <th>File</th>
+	  <th>Status</th>
+	  <th>Output</th>
+	  <th>Error</th>
+	</tr>
+      </thead>
+
+      <tbody id="unexpected-error">
+	{{#other_error.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Unexpected error<br/>{{status}}</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/other_error.list}}
+      </tbody>
+
+      <tbody id="parsing-error">
+	{{#parsing.error.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Parsing error</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/parsing.error.list}}
+      </tbody>
+
+      <tbody id="conversion-error">
+	{{#conversion.error.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Conversion error</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/conversion.error.list}}
+      </tbody>
+
+      <tbody id="execution-error">
+	{{#execution.error.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Execution error</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/execution.error.list}}
+      </tbody>
+
+      <tbody id="execution-timeout">
+	{{#execution.timeout.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Execution timeout</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/execution.timeout.list}}
+      </tbody>
+
+      <tbody id="verification-error">
+	{{#verification.error.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Verification error</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/verification.error.list}}
+      </tbody>
+
+      <tbody id="verification-success">
+	{{#verification.success.list}}
+	<tr>
+	  <td>{{file}}</td>
+	  <td>Verification success</td>
+	  <td class="verbatim"><pre>{{stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	</tr>
+	{{/verification.success.list}}
+      </tbody>
+    </table>
+  </body>
+</html>
