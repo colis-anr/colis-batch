@@ -8,10 +8,9 @@ module Options = struct
   let timeout = ref 10.
   let colis_cmd = ref "colis"
   let workers = ref 8
-  let report_template = ref Filename.(concat (dirname Sys.argv.(0)) "report.template.html")
 
-  let html_output = ref "report.html"
-  let json_output = ref "report.json"
+  let template_prefix = ref "share/template"
+  let report_prefix = ref "report"
 end
 
 (* Workers *)
@@ -31,7 +30,7 @@ type report =
     status : process_status ;
     stdout : string ;
     stderr : string }
-[@@deriving to_protocol ~driver:(module Jsonm)]
+    [@@deriving to_protocol ~driver:(module Jsonm)]
 
 let files = Queue.create ()
 let reports = Queue.create ()
@@ -46,7 +45,7 @@ let report_from_process file process =
 let rec worker wid =
   try
     let file = Queue.pop files in
-    Format.eprintf "[%d] %s \t(%d remaining)@." wid file (Queue.length files);
+    Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file;
     let process =
       (!Options.colis_cmd,
        [|"--shell"; "--run-symbolic"; "--fail-on-unknown-utilities";
@@ -81,15 +80,57 @@ let workers n =
 
 (* Report *)
 
-type report_list =
-  { number : int ;
-    percentage : int ;
-    list : report list }
+type grouped_reports =
+  { list : report list ;
+    status : process_status ;
+    stdout : string ;
+    stderr : string }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
-let report_list_from_report_list ~total list =
-  let number = List.length list in
-  { number ; percentage = 100 * number / total ; list }
+let grouped_reports_from_report_list reports =
+  let compare_group (r1 : report) (r2 : report) =
+    let c = compare r1.status r2.status in
+    if c <> 0 then c
+    else
+      let c = compare r1.stdout r2.stdout in
+      if c <> 0 then c
+      else
+        let c = compare r1.stderr r2.stderr in
+        c
+  in
+  let add_to_group report (group : grouped_reports) =
+    { group with list = report :: group.list }
+  in
+  let rec group_aux (prev : report) curr = function
+    | [] ->
+       [curr]
+    | h :: q ->
+       if compare_group prev h = 0 then
+         group_aux prev (add_to_group h curr) q
+       else
+         curr :: group q
+  and group = function
+    | [] -> []
+    | h :: q -> group_aux h { list = [h] ; status = h.status ; stdout = h.stdout ; stderr = h.stderr } q
+  in
+  List.sort compare_group reports
+  |> group
+  |> List.sort (fun g1 g2 -> - compare (List.length g1.list) (List.length g2.list))
+
+type report_list =
+  { number : int ;
+    number_of_groups : int ;
+    percentage_total : float ;
+    percentage_previous : float ;
+    list : grouped_reports list }
+[@@deriving to_protocol ~driver:(module Jsonm)]
+
+let report_list_from_report_list ~total ~previous reports =
+  let number = List.length reports in
+  let percentage_total = floor (10000. *. (float number) /. (float total)) /. 100. in
+  let percentage_previous = floor (10000. *. (float number) /. (float previous)) /. 100. in
+  let list = grouped_reports_from_report_list reports in
+  { number ; percentage_total ; percentage_previous ; number_of_groups = List.length list ; list }
 
 type parameters =
   { timeout : float }
@@ -118,15 +159,15 @@ type full_report =
     execution : execution_report ;
     verification : generic_report ;
     other_error : report_list }
-[@@deriving to_protocol ~driver:(module Jsonm)]
+    [@@deriving to_protocol ~driver:(module Jsonm)]
 
-let is_verification_success report = report.status = Unix.WEXITED 0
-let is_verification_error report = report.status = Unix.WEXITED 1
-let is_execution_timeout report = report.status = Unix.WSIGNALED Sys.sigkill
-let is_execution_error report = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
-let is_conversion_error report = report.status = Unix.WEXITED 6
-let is_parsing_error report = report.status = Unix.WEXITED 5
-let is_other_error report =
+let is_verification_success (report : report) = report.status = Unix.WEXITED 0
+let is_verification_error (report : report) = report.status = Unix.WEXITED 1
+let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill
+let is_execution_error (report : report) = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
+let is_conversion_error (report : report) = report.status = Unix.WEXITED 6
+let is_parsing_error (report : report) = report.status = Unix.WEXITED 5
+let is_other_error (report : report) =
   not (is_verification_success report || is_verification_error report
        || is_execution_timeout report || is_execution_error report
        || is_conversion_error report || is_parsing_error report)
@@ -142,23 +183,26 @@ let generate_report () =
   let other_error, reports =
     List.partition is_other_error reports
   in
-  let other_error = report_list_from_report_list ~total other_error in
+  let other_error = report_list_from_report_list ~total ~previous:total other_error in
+  let previous = List.length reports in
 
   let parsing_error, reports =
     List.partition is_parsing_error reports
   in
   let parsing =
-    { success = report_list_from_report_list ~total reports ;
-      error = report_list_from_report_list ~total parsing_error }
+    { success = report_list_from_report_list ~total ~previous reports ;
+      error = report_list_from_report_list ~total ~previous parsing_error }
   in
+  let previous = List.length reports in
 
   let conversion_error, reports =
     List.partition is_conversion_error reports
   in
   let conversion =
-    { success = report_list_from_report_list ~total reports ;
-      error = report_list_from_report_list ~total conversion_error }
+    { success = report_list_from_report_list ~total ~previous reports ;
+      error = report_list_from_report_list ~total ~previous conversion_error }
   in
+  let previous = List.length reports in
 
   let execution_error, reports =
     List.partition is_execution_error reports
@@ -167,10 +211,11 @@ let generate_report () =
     List.partition is_execution_timeout reports
   in
   let execution =
-    { success = report_list_from_report_list ~total reports ;
-      timeout = report_list_from_report_list ~total execution_timeout ;
-      error = report_list_from_report_list ~total execution_error }
+    { success = report_list_from_report_list ~total ~previous reports ;
+      timeout = report_list_from_report_list ~total ~previous execution_timeout ;
+      error = report_list_from_report_list ~total ~previous execution_error }
   in
+  let previous = List.length reports in
 
   let verification_error, reports =
     List.partition is_verification_error reports
@@ -180,8 +225,8 @@ let generate_report () =
   in
   assert (reports = []);
   let verification =
-    { success = report_list_from_report_list ~total verification_success ;
-      error = report_list_from_report_list ~total verification_error }
+    { success = report_list_from_report_list ~total ~previous verification_success ;
+      error = report_list_from_report_list ~total ~previous verification_error }
   in
 
   { parameters ; infos ; parsing ; conversion ; execution ; verification ; other_error }
@@ -191,39 +236,43 @@ let report_to_json report =
   | `O json -> `O json
   | _ -> assert false
 
-let render_json_report ~channel json =
-  output_string channel (Ezjsonm.to_string ~minify:false json)
+module Report = struct
+  let render_template ~file ~json =
+    let template = Filename.concat !Options.template_prefix (file ^ ".html") in
+    let output = Filename.concat !Options.report_prefix (file ^ ".html") in
+    let template =
+      let ichan = open_in template in
+      let template = ichan |> Lexing.from_channel |> Mustache.parse_lx in
+      close_in ichan;
+      template
+    in
+    let ochan = open_out output in
+    let fmt = Format.formatter_of_out_channel ochan in
+    Mustache.render_fmt fmt template json;
+    Format.pp_print_flush fmt ();
+    close_out ochan
 
-let render_html_report ~channel json =
-  let template =
-    let ichan = open_in !Options.report_template in
-    let template = ichan |> Lexing.from_channel |> Mustache.parse_lx in
-    close_in ichan;
-    template
-  in
-  let fmt =
-    (* FIXME: output file *)
-    Format.formatter_of_out_channel channel
-  in
-  Mustache.render_fmt fmt template json;
-  Format.pp_print_flush fmt ()
+  let render_json json =
+    let output = Filename.concat !Options.report_prefix "report.json" in
+    let ochan = open_out output in
+    output_string ochan (Ezjsonm.to_string ~minify:false json);
+    close_out ochan
+
+  let render_index json = render_template ~file:"index" ~json
+
+  let render json =
+    render_json json;
+    render_index json
+                 (* FIXME *)
+end
 
 let main () =
   Lwt_io.(read_lines stdin)
   |> Lwt_stream.iter (fun file -> Queue.add file files) >>= fun () ->
   workers !Options.workers >>= fun () ->
   let json = generate_report () |> report_to_json in
-  let () =
-    let channel = open_out !Options.json_output in
-    render_json_report ~channel json;
-    close_out channel
-  in
-  let () =
-    let channel = open_out !Options.html_output in
-    render_html_report ~channel json;
-    close_out channel
-  in
-  Lwt_io.eprint "Done!\n"
+  Report.render json;
+  Lwt_io.eprintf "Done!\n"
 
 let () =
   Lwt_main.run (main ())

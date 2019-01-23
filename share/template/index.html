@@ -12,23 +12,27 @@
       table {
 	  width: 100%;
       }
-      tbody {
-	  height: 300px;
+      table#summary tbody {
+	  height: 500px;
       }
-      td {
+      table#summary td {
 	  text-align: center;
       }
-      td.success {
+      table#summary td.success {
 	  background: #afa;
       }
-      td.error {
+      table#summary td.error {
 	  background: #faa;
       }
-      th, td.empty {
+      th, table#summary td.empty {
 	  background: #ddd;
       }
-      .verbatim {
+      table#details td {
+	  vertical-align: top;
 	  text-align: left;
+      }
+      table#details tbody {
+	  border-bottom: 2px solid #ddd;
       }
     </style>
   </head>
@@ -45,7 +49,7 @@
 
     <h2>Summary</h2>
 
-    <table>
+    <table id="summary">
       <thead>
 	<tr>
 	  <th>Parsing</th>
@@ -57,74 +61,93 @@
 
       <tbody>
 	<!-- Success to verify a clean script -->
-	<tr style="height: {{verification.success.percentage}}%;">
+	<tr style="height: {{verification.success.percentage_total}}%;">
 	  <td class="success" rowspan="5">
 	    Success<br/>
-	    {{parsing.success.number}} ({{parsing.success.percentage}}%)
+	    {{parsing.success.number}}
+	    ({{parsing.success.percentage_total}}% of all;
+	    {{parsing.success.percentage_previous}}% of expected runs)
 	  </td>
 	  <td class="success" rowspan="4">
 	    Success<br/>
-	    {{conversion.success.number}} ({{conversion.success.percentage}}%)
+	    {{conversion.success.number}}
+	    ({{conversion.success.percentage_total}}% of all;
+	    {{conversion.success.percentage_previous}}% of parsed)
 	  </td>
 	  <td class="success" rowspan="2">
 	    Success<br/>
-	    {{execution.success.number}} ({{execution.success.percentage}}%)
+	    {{execution.success.number}}
+	    ({{execution.success.percentage_total}}% of all;
+	    {{execution.success.percentage_previous}}% of converted)
 	  </td>
 	  <td class="success" rowspan="1">
 	    <a href="#verification-success">Success</a><br/>
-	    {{verification.success.number}} ({{verification.success.percentage}}%)
+	    {{verification.success.number}}
+	    ({{verification.success.percentage_total}}% of all;
+	    {{verification.success.percentage_previous}}% of executed)
 	  </td>
 	</tr>
 
 	<!-- Success to verify a wrong script -->
-	<tr style="height: {{verification.error.percentage}}%;">
+	<tr style="height: {{verification.error.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#verification-error">Error</a><br/>
-	    {{verification.error.number}} ({{verification.error.percentage}}%)
+	    {{verification.error.number}}
+	    ({{verification.error.percentage_total}}% of all;
+	    {{verification.error.percentage_previous}}% of executed)
 	  </td>
 	</tr>
 
 	<!-- Timeout during execution -->
-	<tr style="height: {{execution.timeout.percentage}}%;">
+	<tr style="height: {{execution.timeout.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#execution-timeout">Timeout</a><br/>
-	    {{execution.timeout.number}} ({{execution.timeout.percentage}}%)
+	    {{execution.timeout.number}}
+	    ({{execution.timeout.percentage_total}}% of all;
+	    {{execution.timeout.percentage_previous}}% of converted)
 	  </td>
 	  <td class="empty"></td>
 	</tr>
 
 	<!-- Error during execution -->
-	<tr style="height: {{execution.error.percentage}}%;">
+	<tr style="height: {{execution.error.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#execution-error">Error</a><br/>
-	    {{execution.error.number}} ({{execution.error.percentage}}%)
+	    {{execution.error.number}}
+	    ({{execution.error.percentage_total}}% of all;
+	    {{execution.error.percentage_previous}}% of converted)
 	  </td>
 	  <td class="empty"></td>
 	</tr>
 
 	<!-- Error during conversion -->
-	<tr style="height: {{conversion.error.percentage}}%;">
+	<tr style="height: {{conversion.error.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#conversion-error">Error</a><br/>
-	    {{conversion.error.number}} ({{conversion.error.percentage}}%)
+	    {{conversion.error.number}}
+	    ({{conversion.error.percentage_total}}% of all;
+	    {{conversion.error.percentage_previous}}% of parsed)
 	  </td>
 	  <td class="empty" colspan="2"></td>
 	</tr>
 
 	<!-- Error during parsing -->
-	<tr style="height: {{parsing.error.percentage}}%;">
+	<tr style="height: {{parsing.error.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#parsing-error">Error</a><br/>
-	    {{parsing.error.number}} ({{parsing.error.percentage}}%)
+	    {{parsing.error.number}}
+	    ({{parsing.error.percentage_total}}% of all;
+	    {{parsing.error.percentage_previous}}% of expected runs)
 	  </td>
 	  <td class="empty" colspan="3"></td>
 	</tr>
 
 	<!-- Unexpected error -->
-	<tr style="height: {{other_error.percentage}}%;">
+	<tr style="height: {{other_error.percentage_total}}%;">
 	  <td class="error">
 	    <a href="#unexpected-error">Unexpected error</a><br/>
-	    {{other_error.number}} ({{other_error.percentage}}%)
+	    {{other_error.number}}
+	    ({{other_error.percentage_total}}% of all)
 	  </td>
 	  <td class="empty" colspan="3"></td>
 	</tr>
@@ -133,7 +156,7 @@
 
     <h2>Details</h2>
 
-    <table>
+    <table id="details">
       <thead>
 	<tr>
 	  <th>File</th>
@@ -146,10 +169,16 @@
       <tbody id="unexpected-error">
 	{{#other_error.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Unexpected error<br/>{{status}}</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/other_error.list}}
       </tbody>
@@ -157,10 +186,16 @@
       <tbody id="parsing-error">
 	{{#parsing.error.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Parsing error</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/parsing.error.list}}
       </tbody>
@@ -168,10 +203,16 @@
       <tbody id="conversion-error">
 	{{#conversion.error.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Conversion error</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/conversion.error.list}}
       </tbody>
@@ -179,10 +220,16 @@
       <tbody id="execution-error">
 	{{#execution.error.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Execution error</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/execution.error.list}}
       </tbody>
@@ -190,7 +237,13 @@
       <tbody id="execution-timeout">
 	{{#execution.timeout.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Execution timeout</td>
 	  <td class="verbatim"><pre>{{stdout}}</pre></td>
 	  <td class="verbatim"><pre>{{stderr}}</pre></td>
@@ -201,10 +254,16 @@
       <tbody id="verification-error">
 	{{#verification.error.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Verification error</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/verification.error.list}}
       </tbody>
@@ -212,10 +271,16 @@
       <tbody id="verification-success">
 	{{#verification.success.list}}
 	<tr>
-	  <td>{{file}}</td>
+	  <td>
+	    <ul>
+	      {{#list}}
+	      <li>{{file}}</li>
+	      {{/list}}
+	    </ul>
+	  </td>
 	  <td>Verification success</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td><pre>{{stdout}}</pre></td>
+	  <td><pre>{{stderr}}</pre></td>
 	</tr>
 	{{/verification.success.list}}
       </tbody>
