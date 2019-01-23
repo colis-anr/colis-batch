@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CoLiS-Language Covering</title>
+
+    <meta charset="utf-8" />
+    <style type="text/css">
+      body {
+	  width: 80%;
+	  margin: auto;
+      }
+      table {
+	  width: 100%;
+      }
+      table#summary tbody {
+	  height: 500px;
+      }
+      table#summary td {
+	  text-align: center;
+      }
+      table#summary td.success {
+	  background: #afa;
+      }
+      table#summary td.error {
+	  background: #faa;
+      }
+      th, table#summary td.empty {
+	  background: #ddd;
+      }
+      table#details td {
+	  vertical-align: top;
+	  text-align: left;
+      }
+      table#details tbody {
+	  border-bottom: 2px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CoLiS-Language Covering</h1>
+
+    <dl>
+      <dt>Status</dt>
+      <dd>{{status}}</dd>
+
+      <dt>Number of files</dt>
+      <dd>{{number}}</dd>
+    </dl>
+
+    <h2>stdout</h2>
+    <pre>{{stdout}}</pre>
+
+    <h2>stderr</h2>
+    <pre>{{stderr}}</pre>
+
+    <h2>Files</h2>
+    <ul>
+      {{#files}}
+      <li>{{file}}</li>
+      {{/files}}
+    </ul>
+  </body>
+</html>

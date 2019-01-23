@@ -45,6 +45,12 @@
 
       <dt>Timeout</dt>
       <dd>{{parameters.timeout}}s</dd>
+
+      <dt>Workers</dt>
+      <dd>{{infos.workers}}</dd>
+
+      <dt>Duration</dt>
+      <dd>{{infos.duration}}s</dd>
     </dl>
 
     <h2>Summary</h2>
@@ -144,12 +150,11 @@
 
 	<!-- Unexpected error -->
 	<tr style="height: {{other_error.percentage_total}}%;">
-	  <td class="error">
+	  <td class="error" colspan="4">
 	    <a href="#unexpected-error">Unexpected error</a><br/>
 	    {{other_error.number}}
 	    ({{other_error.percentage_total}}% of all)
 	  </td>
-	  <td class="empty" colspan="3"></td>
 	</tr>
       </tbody>
     </table>
@@ -159,130 +164,96 @@
     <table id="details">
       <thead>
 	<tr>
-	  <th>File</th>
 	  <th>Status</th>
+	  <th># files</th>
 	  <th>Output</th>
 	  <th>Error</th>
+	  <th>Details</th>
 	</tr>
       </thead>
 
       <tbody id="unexpected-error">
-	{{#other_error.list}}
+	{{#other_error.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Unexpected error<br/>{{status}}</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/other_error.list}}
+	{{/other_error.groups}}
       </tbody>
 
       <tbody id="parsing-error">
-	{{#parsing.error.list}}
+	{{#parsing.error.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Parsing error</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/parsing.error.list}}
+	{{/parsing.error.groups}}
       </tbody>
 
       <tbody id="conversion-error">
-	{{#conversion.error.list}}
+	{{#conversion.error.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Conversion error</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/conversion.error.list}}
+	{{/conversion.error.groups}}
       </tbody>
 
       <tbody id="execution-error">
-	{{#execution.error.list}}
+	{{#execution.error.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Execution error</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/execution.error.list}}
+	{{/execution.error.groups}}
       </tbody>
 
       <tbody id="execution-timeout">
-	{{#execution.timeout.list}}
+	{{#execution.timeout.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Execution timeout</td>
-	  <td class="verbatim"><pre>{{stdout}}</pre></td>
-	  <td class="verbatim"><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td class="verbatim"><pre>{{short_stdout}}</pre></td>
+	  <td class="verbatim"><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/execution.timeout.list}}
+	{{/execution.timeout.groups}}
       </tbody>
 
       <tbody id="verification-error">
-	{{#verification.error.list}}
+	{{#verification.error.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Verification error</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/verification.error.list}}
+	{{/verification.error.groups}}
       </tbody>
 
       <tbody id="verification-success">
-	{{#verification.success.list}}
+	{{#verification.success.groups}}
 	<tr>
-	  <td>
-	    <ul>
-	      {{#list}}
-	      <li>{{file}}</li>
-	      {{/list}}
-	    </ul>
-	  </td>
 	  <td>Verification success</td>
-	  <td><pre>{{stdout}}</pre></td>
-	  <td><pre>{{stderr}}</pre></td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
-	{{/verification.success.list}}
+	{{/verification.success.groups}}
       </tbody>
     </table>
   </body>

@@ -80,14 +80,28 @@ let workers n =
 
 (* Report *)
 
-type grouped_reports =
-  { list : report list ;
+type file =
+  { file : string }
+[@@deriving to_protocol ~driver:(module Jsonm)]
+
+type reports_group =
+  { id : int ;
+    files : file list ;
+    number : int ;
     status : process_status ;
+    short_stdout : string ;
     stdout : string ;
+    short_stderr : string ;
     stderr : string }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
-let grouped_reports_from_report_list reports =
+let reports_groups_list_from_reports_list reports =
+  let shorten_out s =
+    match String.split_on_char '\n' s with
+    | [] -> ""
+    | [e] | [e;""] -> e
+    | e :: _ -> e ^ "\n[...]"
+  in
   let compare_group (r1 : report) (r2 : report) =
     let c = compare r1.status r2.status in
     if c <> 0 then c
@@ -98,8 +112,8 @@ let grouped_reports_from_report_list reports =
         let c = compare r1.stderr r2.stderr in
         c
   in
-  let add_to_group report (group : grouped_reports) =
-    { group with list = report :: group.list }
+  let add_to_group (report : report) (group : reports_group) =
+    { group with files = { file = report.file } :: group.files ; number = group.number + 1 }
   in
   let rec group_aux (prev : report) curr = function
     | [] ->
@@ -111,44 +125,53 @@ let grouped_reports_from_report_list reports =
          curr :: group q
   and group = function
     | [] -> []
-    | h :: q -> group_aux h { list = [h] ; status = h.status ; stdout = h.stdout ; stderr = h.stderr } q
+    | h :: q -> group_aux
+                  h
+                  { id = 0 ;
+                    files = [{ file = (h : report).file }] ; number = 1 ; status = h.status ;
+                    short_stdout = shorten_out h.stdout ; stdout = h.stdout ;
+                    short_stderr = shorten_out h.stderr ; stderr = h.stderr }
+                  q
   in
   List.sort compare_group reports
   |> group
-  |> List.sort (fun g1 g2 -> - compare (List.length g1.list) (List.length g2.list))
+  |> List.map (fun g -> { g with id = Hashtbl.hash g.files })
+  |> List.sort (fun g1 g2 -> - compare (List.length g1.files) (List.length g2.files))
 
-type report_list =
+type reports_groups_list =
   { number : int ;
     number_of_groups : int ;
     percentage_total : float ;
     percentage_previous : float ;
-    list : grouped_reports list }
+    groups : reports_group list }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 let report_list_from_report_list ~total ~previous reports =
   let number = List.length reports in
   let percentage_total = floor (10000. *. (float number) /. (float total)) /. 100. in
   let percentage_previous = floor (10000. *. (float number) /. (float previous)) /. 100. in
-  let list = grouped_reports_from_report_list reports in
-  { number ; percentage_total ; percentage_previous ; number_of_groups = List.length list ; list }
+  let groups = reports_groups_list_from_reports_list reports in
+  { number ; percentage_total ; percentage_previous ; number_of_groups = List.length groups ; groups }
 
 type parameters =
   { timeout : float }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 type infos =
-  { total : int }
+  { total : int ;
+    duration : float ;
+    workers : int }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 type generic_report =
-  { success : report_list ;
-    error : report_list }
+  { success : reports_groups_list ;
+    error : reports_groups_list }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 type execution_report =
-  { success : report_list ;
-    error : report_list ;
-    timeout : report_list }
+  { success : reports_groups_list ;
+    error : reports_groups_list ;
+    timeout : reports_groups_list }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 type full_report =
@@ -158,7 +181,8 @@ type full_report =
     conversion : generic_report ;
     execution : execution_report ;
     verification : generic_report ;
-    other_error : report_list }
+    other_error : reports_groups_list ;
+    all : reports_groups_list }
     [@@deriving to_protocol ~driver:(module Jsonm)]
 
 let is_verification_success (report : report) = report.status = Unix.WEXITED 0
@@ -172,13 +196,14 @@ let is_other_error (report : report) =
        || is_execution_timeout report || is_execution_error report
        || is_conversion_error report || is_parsing_error report)
 
-let generate_report () =
+let generate_report ~duration () =
   let reports = Queue.to_seq reports |> List.of_seq in
   let total = List.length reports in
+  let all = report_list_from_report_list ~total ~previous:total reports in
 
   let parameters = { timeout = !Options.timeout } in
 
-  let infos = { total } in
+  let infos = { total ; duration ; workers = !Options.workers } in
 
   let other_error, reports =
     List.partition is_other_error reports
@@ -229,17 +254,22 @@ let generate_report () =
       error = report_list_from_report_list ~total ~previous verification_error }
   in
 
-  { parameters ; infos ; parsing ; conversion ; execution ; verification ; other_error }
+  { parameters ; infos ; parsing ; conversion ; execution ; verification ; other_error ; all }
 
-let report_to_json report =
-  match full_report_to_jsonm report with
+let full_report_to_json full_report =
+  match full_report_to_jsonm full_report with
+  | `O json -> `O json
+  | _ -> assert false
+
+let reports_group_to_json reports_group =
+  match reports_group_to_jsonm reports_group with
   | `O json -> `O json
   | _ -> assert false
 
 module Report = struct
-  let render_template ~file ~json =
-    let template = Filename.concat !Options.template_prefix (file ^ ".html") in
-    let output = Filename.concat !Options.report_prefix (file ^ ".html") in
+  let render_template ~template ~output ~json =
+    let template = Filename.concat !Options.template_prefix (template ^ ".html") in
+    let output = Filename.concat !Options.report_prefix (output ^ ".html") in
     let template =
       let ichan = open_in template in
       let template = ichan |> Lexing.from_channel |> Mustache.parse_lx in
@@ -258,20 +288,33 @@ module Report = struct
     output_string ochan (Ezjsonm.to_string ~minify:false json);
     close_out ochan
 
-  let render_index json = render_template ~file:"index" ~json
+  let render_index json =
+    render_template ~template:"index" ~output:"index" ~json
 
-  let render json =
+  let render_reports_group reports_group =
+    Format.printf "b@.";
+    let json = reports_group_to_json reports_group in
+    Format.printf "b@.";
+    render_template ~template:"group" ~output:("group-" ^ (string_of_int reports_group.id)) ~json
+
+  let render report =
+    Format.printf "a@.";
+    let json = full_report_to_json report in
+    Format.printf "a@.";
     render_json json;
-    render_index json
-                 (* FIXME *)
+    Format.printf "a@.";
+    render_index json;
+    Format.printf "a@.";
+    List.iter render_reports_group report.all.groups
 end
 
 let main () =
   Lwt_io.(read_lines stdin)
   |> Lwt_stream.iter (fun file -> Queue.add file files) >>= fun () ->
+  let start_time = Unix.gettimeofday () in
   workers !Options.workers >>= fun () ->
-  let json = generate_report () |> report_to_json in
-  Report.render json;
+  let duration = Unix.gettimeofday () -. start_time in
+  Report.render (generate_report ~duration ());
   Lwt_io.eprintf "Done!\n"
 
 let () =
