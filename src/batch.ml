@@ -292,19 +292,13 @@ module Report = struct
     render_template ~template:"index" ~output:"index" ~json
 
   let render_reports_group reports_group =
-    Format.printf "b@.";
     let json = reports_group_to_json reports_group in
-    Format.printf "b@.";
     render_template ~template:"group" ~output:("group-" ^ (string_of_int reports_group.id)) ~json
 
   let render report =
-    Format.printf "a@.";
     let json = full_report_to_json report in
-    Format.printf "a@.";
     render_json json;
-    Format.printf "a@.";
     render_index json;
-    Format.printf "a@.";
     List.iter render_reports_group report.all.groups
 end
 
