@@ -174,18 +174,25 @@ type execution_report =
     timeout : reports_groups_list }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
+type verification_report =
+  { success : reports_groups_list ;
+    error : reports_groups_list ;
+    incomplete : reports_groups_list }
+[@@deriving to_protocol ~driver:(module Jsonm)]
+
 type full_report =
   { parameters : parameters ;
     infos : infos ;
     parsing : generic_report ;
     conversion : generic_report ;
     execution : execution_report ;
-    verification : generic_report ;
+    verification : verification_report ;
     other_error : reports_groups_list ;
     all : reports_groups_list }
     [@@deriving to_protocol ~driver:(module Jsonm)]
 
 let is_verification_success (report : report) = report.status = Unix.WEXITED 0
+let is_verification_error (report : report) = report.status = Unix.WEXITED 10
 let is_verification_error (report : report) = report.status = Unix.WEXITED 1
 let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill
 let is_execution_error (report : report) = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
@@ -245,13 +252,17 @@ let generate_report ~duration () =
   let verification_error, reports =
     List.partition is_verification_error reports
   in
+  let verification_incomplete, reports =
+    List.partition is_verification_incomplete reports
+  in
   let verification_success, reports =
     List.partition is_verification_success reports
   in
   assert (reports = []);
   let verification =
     { success = report_list_from_report_list ~total ~previous verification_success ;
-      error = report_list_from_report_list ~total ~previous verification_error }
+      error = report_list_from_report_list ~total ~previous verification_error ;
+      incomplete = report_list_from_report_list ~total ~previous verification_incomplete }
   in
 
   { parameters ; infos ; parsing ; conversion ; execution ; verification ; other_error ; all }

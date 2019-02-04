@@ -94,6 +94,16 @@
 	  </td>
 	</tr>
 
+	<!-- Incomplete verification -->
+	<tr style="height: {{verification.incomplete.percentage_total}}%;">
+	  <td class="error">
+	    <a href="#verification-incomplete">Incomplete</a><br/>
+	    {{verification.incomplete.number}}
+	    ({{verification.incomplete.percentage_total}}% of all;
+	    {{verification.incomplete.percentage_previous}}% of executed)
+	  </td>
+	</tr>
+
 	<!-- Success to verify a wrong script -->
 	<tr style="height: {{verification.error.percentage_total}}%;">
 	  <td class="error">
@@ -242,6 +252,18 @@
 	  <td><a href="group-{{id}}.html">Details</a></td>
 	</tr>
 	{{/verification.error.groups}}
+      </tbody>
+
+      <tbody id="verification-incomplete">
+	{{#verification.incomplete.groups}}
+	<tr>
+	  <td>Incomplete verification</td>
+	  <td>{{number}}</td>
+	  <td><pre>{{short_stdout}}</pre></td>
+	  <td><pre>{{short_stderr}}</pre></td>
+	  <td><a href="group-{{id}}.html">Details</a></td>
+	</tr>
+	{{/verification.incomplete.groups}}
       </tbody>
 
       <tbody id="verification-success">
