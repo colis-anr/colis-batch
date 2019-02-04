@@ -7,7 +7,7 @@ let (>>=) = Lwt.bind
 module Options = struct
   let timeout = ref 10.
   let colis_cmd = ref "colis"
-  let workers = ref 8
+  let workers = ref 160
 
   let template_prefix = ref "share/template"
   let report_prefix = ref "report"
@@ -48,7 +48,9 @@ let rec worker wid =
     Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file;
     let process =
       (!Options.colis_cmd,
-       [|"--shell"; "--run-symbolic"; "--fail-on-unknown-utilities";
+       [|"--shell"; "--run-symbolic";
+         "--fail-on-unknown-utilities";
+         "--external-sources"; "/external_sources";
          file|])
     in
     Lwt.catch
