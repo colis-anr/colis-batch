@@ -194,7 +194,7 @@ type full_report =
     [@@deriving to_protocol ~driver:(module Jsonm)]
 
 let is_verification_success (report : report) = report.status = Unix.WEXITED 0
-let is_verification_error (report : report) = report.status = Unix.WEXITED 10
+let is_verification_incomplete (report : report) = report.status = Unix.WEXITED 10
 let is_verification_error (report : report) = report.status = Unix.WEXITED 1
 let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill
 let is_execution_error (report : report) = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
