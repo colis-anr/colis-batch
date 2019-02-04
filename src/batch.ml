@@ -124,7 +124,7 @@ let reports_groups_list_from_reports_list reports =
        if compare_group prev h = 0 then
          group_aux prev (add_to_group h curr) q
        else
-         curr :: group q
+         curr :: group (h :: q)
   and group = function
     | [] -> []
     | h :: q -> group_aux
