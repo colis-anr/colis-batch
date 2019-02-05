@@ -35,29 +35,19 @@
 	  border-bottom: 2px solid #ddd;
       }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"></script>
+    <script>
+      hljs.initHighlightingOnLoad();
+      hljs.initLineNumbersOnLoad();
+    </script>
   </head>
   <body>
     <h1>CoLiS-Language Covering</h1>
 
-    <dl>
-      <dt>Status</dt>
-      <dd>{{status}}</dd>
+    <h2>{{name}}</h2>
 
-      <dt>Number of files</dt>
-      <dd>{{number}}</dd>
-    </dl>
-
-    <h2>stdout</h2>
-    <pre>{{stdout}}</pre>
-
-    <h2>stderr</h2>
-    <pre>{{stderr}}</pre>
-
-    <h2>Files</h2>
-    <ul>
-      {{#files}}
-      <li><a href="file-{{id}}.html">{{name}}</a></li>
-      {{/files}}
-    </ul>
+    <pre><code class="bash">{{content}}</code></pre>
   </body>
 </html>

@@ -25,15 +25,21 @@ let process_status_to_jsonm = function
   | WSIGNALED n -> `String ("Signaled " ^ string_of_int n)
   | WSTOPPED n -> `String ("Stopped " ^ string_of_int n)
 
+type file =
+  { id : int ;
+    name : string ;
+    content : string }
+[@@deriving to_protocol ~driver:(module Jsonm)]
+
 type report =
-  { file : string ;
+  { file : file ;
     status : process_status ;
     stdout : string ;
     stderr : string }
     [@@deriving to_protocol ~driver:(module Jsonm)]
 
-let files = Queue.create ()
-let reports = Queue.create ()
+let files : file Queue.t = Queue.create ()
+let reports : report Queue.t = Queue.create ()
 
 let report_from_process file process =
   process#status >>= fun status ->
@@ -45,13 +51,13 @@ let report_from_process file process =
 let rec worker wid =
   try
     let file = Queue.pop files in
-    Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file;
+    Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file.name;
     let process =
       (!Options.colis_cmd,
        [|"--shell"; "--run-symbolic";
          "--fail-on-unknown-utilities";
          "--external-sources"; "/external_sources";
-         file|])
+         file.name|])
     in
     Lwt.catch
       (fun () ->
@@ -82,10 +88,6 @@ let workers n =
 
 (* Report *)
 
-type file =
-  { file : string }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
 type reports_group =
   { id : int ;
     files : file list ;
@@ -115,7 +117,7 @@ let reports_groups_list_from_reports_list reports =
         c
   in
   let add_to_group (report : report) (group : reports_group) =
-    { group with files = { file = report.file } :: group.files ; number = group.number + 1 }
+    { group with files = report.file :: group.files ; number = group.number + 1 }
   in
   let rec group_aux (prev : report) curr = function
     | [] ->
@@ -130,7 +132,7 @@ let reports_groups_list_from_reports_list reports =
     | h :: q -> group_aux
                   h
                   { id = 0 ;
-                    files = [{ file = (h : report).file }] ; number = 1 ; status = h.status ;
+                    files = [(h : report).file] ; number = 1 ; status = h.status ;
                     short_stdout = shorten_out h.stdout ; stdout = h.stdout ;
                     short_stderr = shorten_out h.stderr ; stderr = h.stderr }
                   q
@@ -279,6 +281,11 @@ let reports_group_to_json reports_group =
   | `O json -> `O json
   | _ -> assert false
 
+let file_to_json file =
+  match file_to_jsonm file with
+  | `O json -> `O json
+  | _ -> assert false
+
 module Report = struct
   let render_template ~template ~output ~json =
     let template = Filename.concat !Options.template_prefix (template ^ ".html") in
@@ -308,19 +315,44 @@ module Report = struct
     let json = reports_group_to_json reports_group in
     render_template ~template:"group" ~output:("group-" ^ (string_of_int reports_group.id)) ~json
 
+  let render_file file =
+    let json = file_to_json file in
+    render_template ~template:"file" ~output:("file-" ^ (string_of_int file.id)) ~json
+
   let render report =
     let json = full_report_to_json report in
     render_json json;
     render_index json;
-    List.iter render_reports_group report.all.groups
+    List.iter
+      (fun reports_group ->
+        render_reports_group reports_group;
+        List.iter render_file reports_group.files)
+      report.all.groups
 end
 
 let main () =
+  (* Read all file names from standard input. For each file, get its
+     content and put everything on the processing queue. *)
   Lwt_io.(read_lines stdin)
-  |> Lwt_stream.iter (fun file -> Queue.add file files) >>= fun () ->
+  |> Lwt_stream.iter_n
+       ~max_concurrency:8
+       (fun name ->
+         Lwt_io.with_file
+           ~mode:Input
+           name
+           (fun chan ->
+             Lwt_io.read chan >>= fun content ->
+             Queue.add { id = Hashtbl.hash name ; name ; content } files;
+             Lwt.return ()))
+
+  (* Start workers that will read the processing queue and run
+     CoLiS-language on each input. *)
+  >>= fun () ->
   let start_time = Unix.gettimeofday () in
   workers !Options.workers >>= fun () ->
   let duration = Unix.gettimeofday () -. start_time in
+
+  (* Render the report and exit. *)
   Report.render (generate_report ~duration ());
   Lwt_io.eprintf "Done!\n"
 
