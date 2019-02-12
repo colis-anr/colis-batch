@@ -55,6 +55,7 @@ let rec worker wid =
     let process =
       (!Options.colis_cmd,
        [|"--shell"; "--run-symbolic";
+         "--symbolic-fs"; "simple";
          "--fail-on-unknown-utilities";
          "--external-sources"; "/external_sources";
          file.name|])
