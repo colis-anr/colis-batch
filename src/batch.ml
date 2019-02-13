@@ -48,40 +48,52 @@ let report_from_process file process =
   process#close >>= fun _ ->
   Lwt.return { file ; status ; stdout ; stderr }
 
-let rec worker wid =
-  try
-    let file = Queue.pop files in
-    Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file.name;
-    let process =
-      (!Options.colis_cmd,
-       [|"--shell"; "--run-symbolic";
+let args_from_file = function
+  | "preinst" -> [["install"]]
+  | "postinst" -> [["configure"]]
+  | "prerm" -> [["remove"]]
+  | "postrm" -> [["remove"]; ["purge"]]
+  | _ -> []
+
+let worker_process_args wid file args =
+  Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file.name;
+  let process =
+    (!Options.colis_cmd,
+     Array.of_list
+       (["--shell"; "--run-symbolic";
          "--symbolic-fs"; "simple";
          "--fail-on-unknown-utilities";
          "--external-sources"; "/external_sources";
-         file.name|])
-    in
-    Lwt.catch
-      (fun () ->
-        Lwt_process.with_process_full
-          ~timeout:!Options.timeout
-          process (report_from_process file)
-        >>= fun report ->
-        Queue.add report reports;
-        Lwt.return ())
-      (function
-       | Lwt_io.Channel_closed _ ->
-          (* Timeout where closing the channels was faster than
+         file.name;
+         "--"] @ args))
+  in
+  Lwt.catch
+    (fun () ->
+      Lwt_process.with_process_full
+        ~timeout:!Options.timeout
+        process (report_from_process file)
+      >>= fun report ->
+      Queue.add report reports;
+      Lwt.return ())
+    (function
+     | Lwt_io.Channel_closed _ ->
+        (* Timeout where closing the channels was faster than
              receiving the SIGKILL signal. *)
-          Queue.add { file ; status = WSIGNALED Sys.sigkill ; stdout = "" ; stderr = "" } reports;
-          Lwt.return ()
-       | _exn ->
-          (* FIXME *)
-          Lwt.return ())
+        Queue.add { file ; status = WSIGNALED Sys.sigkill ; stdout = "" ; stderr = "" } reports;
+        Lwt.return ()
+     | _exn ->
+        (* FIXME *)
+        Lwt.return ())
+
+let rec worker wid =
+  try
+    let file = Queue.pop files in
+    let args = args_from_file (Filename.basename file.name) in
+    Lwt_list.iter_s (worker_process_args wid file) args
     >>= fun () ->
     worker wid
   with
-    Queue.Empty ->
-    Lwt.return ()
+  | Queue.Empty -> Lwt.return ()
 
 let workers n =
   List.init n worker
