@@ -1,11 +1,13 @@
 open Protocol_conv_jsonm
 
 let (>>=) = Lwt.bind
+let spf = Format.sprintf
 
 (* Options *)
 
 module Options = struct
-  let timeout = ref 10.
+  let cpu_timeout = ref 5
+  let timeout = ref 100.
   let colis_cmd = ref "colis"
   let workers = ref 160
 
@@ -64,6 +66,7 @@ let worker_process_args wid file args =
          "--symbolic-fs"; "simple";
          "--fail-on-unknown-utilities";
          "--external-sources"; "/external_sources";
+         "--cpu-time-limit"; string_of_int !Options.cpu_timeout;
          file.name;
          "--"] @ args))
   in
@@ -171,11 +174,13 @@ let report_list_from_report_list ~total ~previous reports =
   { number ; percentage_total ; percentage_previous ; number_of_groups = List.length groups ; groups }
 
 type parameters =
-  { timeout : float }
+  { timeout : float ;
+    cpu_timeout : int }
 [@@deriving to_protocol ~driver:(module Jsonm)]
 
 type infos =
   { total : int ;
+    date : string ;
     duration : float ;
     workers : int }
 [@@deriving to_protocol ~driver:(module Jsonm)]
@@ -225,9 +230,15 @@ let generate_report ~duration () =
   let total = List.length reports in
   let all = report_list_from_report_list ~total ~previous:total reports in
 
-  let parameters = { timeout = !Options.timeout } in
+  let parameters = { timeout = !Options.timeout ; cpu_timeout = !Options.cpu_timeout } in
 
-  let infos = { total ; duration ; workers = !Options.workers } in
+  let date =
+    let open Unix in
+    let tm = localtime (time ()) in
+    spf "%04d-%02d-%02d %02d:%02d:%02d"
+      (1900 + tm.tm_year) (1 + tm.tm_mon) tm.tm_mday tm.tm_hour tm.tm_min tm.tm_sec
+  in
+  let infos = { total ; date ; duration ; workers = !Options.workers } in
 
   let other_error, reports =
     List.partition is_other_error reports
