@@ -216,7 +216,7 @@ type full_report =
 let is_verification_success (report : report) = report.status = Unix.WEXITED 0
 let is_verification_incomplete (report : report) = report.status = Unix.WEXITED 10
 let is_verification_error (report : report) = report.status = Unix.WEXITED 1
-let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill
+let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill || report.status = Unix.WEXITED 11
 let is_execution_error (report : report) = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
 let is_conversion_error (report : report) = report.status = Unix.WEXITED 6
 let is_parsing_error (report : report) = report.status = Unix.WEXITED 5
