@@ -9,7 +9,7 @@ module Options = struct
   let cpu_timeout = ref 5
   let timeout = ref 100.
   let colis_cmd = ref "colis"
-  let workers = ref 160
+  let workers = ref 40
 
   let template_prefix = ref "share/template"
   let report_prefix = ref "report"
