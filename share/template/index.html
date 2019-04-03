@@ -21,6 +21,9 @@
       table#summary td.success {
 	  background: #afa;
       }
+      table#summary td.rejected {
+          background: #aaf;
+      }
       table#summary td.error {
 	  background: #faa;
       }
@@ -100,6 +103,16 @@
 	  </td>
 	</tr>
 
+	<!-- Success to verify a wrong script -->
+	<tr style="height: {{verification.error.percentage_total}}%;">
+	  <td class="rejected">
+	    <a href="#verification-error">Error</a><br/>
+	    {{verification.error.number}}
+	    ({{verification.error.percentage_total}}% of all;
+	    {{verification.error.percentage_previous}}% of executed)
+	  </td>
+	</tr>
+
 	<!-- Incomplete verification -->
 	<tr style="height: {{verification.incomplete.percentage_total}}%;">
 	  <td class="error">
@@ -107,16 +120,6 @@
 	    {{verification.incomplete.number}}
 	    ({{verification.incomplete.percentage_total}}% of all;
 	    {{verification.incomplete.percentage_previous}}% of executed)
-	  </td>
-	</tr>
-
-	<!-- Success to verify a wrong script -->
-	<tr style="height: {{verification.error.percentage_total}}%;">
-	  <td class="error">
-	    <a href="#verification-error">Error</a><br/>
-	    {{verification.error.number}}
-	    ({{verification.error.percentage_total}}% of all;
-	    {{verification.error.percentage_previous}}% of executed)
 	  </td>
 	</tr>
 
@@ -155,7 +158,7 @@
 
 	<!-- Error during parsing -->
 	<tr style="height: {{parsing.error.percentage_total}}%;">
-	  <td class="error">
+	  <td class="rejected">
 	    <a href="#parsing-error">Error</a><br/>
 	    {{parsing.error.number}}
 	    ({{parsing.error.percentage_total}}% of all;
