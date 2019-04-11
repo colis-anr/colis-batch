@@ -14,18 +14,7 @@ bug-reports: "https://github.com/colis-anr/colis-batch/issues"
 authors: "Nicolas Jeannerod <nicolas.jeannerod@irif.fr>"
 maintainer: "Nicolas Jeannerod <nicolas.jeannerod@irif.fr>"
 
-pin-depends: [
-  [ "colis-language.dev" "git+https://github.com/colis-anr/colis-language.git" ]
-
-  # We must add CoLiS-language's pinned dependencies
-  [ "morsmall.dev" "git+https://github.com/colis-anr/morsmall.git" ]
-  [ "why3.dev"     "git+https://gitlab.inria.fr/why3/why3.git#c0758c6b" ]
-]
-
 depends: [
   "colis-language"
-  "dune"                     {build}
-  "lwt"
-  "mustache"
-  "ppx_protocol_conv_jsonm"
+  "dune"            {build}
 ]

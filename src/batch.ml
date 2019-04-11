@@ -1,384 +1,112 @@
-open Protocol_conv_jsonm
 
-let (>>=) = Lwt.bind
-let spf = Format.sprintf
-
-(* Options *)
-
-module Options = struct
-  let cpu_timeout = ref 5
-  let timeout = ref 100.
-  let colis_cmd = ref "colis"
-  let workers = ref 40
-
-  let template_prefix = ref "share/template"
-  let report_prefix = ref "report"
-end
-
-(* Workers *)
-
-type process_status = Unix.process_status =
-  | WEXITED of int
-  | WSIGNALED of int
-  | WSTOPPED of int
-
-let process_status_to_jsonm = function
-  | WEXITED n -> `String ("Exited " ^ string_of_int n)
-  | WSIGNALED n -> `String ("Signaled " ^ string_of_int n)
-  | WSTOPPED n -> `String ("Stopped " ^ string_of_int n)
-
-type file =
-  { id : int ;
-    name : string ;
-    content : string }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-type report =
-  { file : file ;
-    status : process_status ;
-    stdout : string ;
-    stderr : string }
-    [@@deriving to_protocol ~driver:(module Jsonm)]
-
-let files : file Queue.t = Queue.create ()
-let reports : report Queue.t = Queue.create ()
-
-let report_from_process file process =
-  process#status >>= fun status ->
-  Lwt_io.read process#stdout >>= fun stdout ->
-  Lwt_io.read process#stderr >>= fun stderr ->
-  process#close >>= fun _ ->
-  Lwt.return { file ; status ; stdout ; stderr }
-
-let args_from_file = function
-  | "preinst" -> [["install"]]
-  | "postinst" -> [["configure"]]
-  | "prerm" -> [["remove"]]
-  | "postrm" -> [["remove"]; ["purge"]]
-  | _ -> []
-
-let worker_process_args wid file args =
-  Format.eprintf "[worker: %2d; remaining files: %d] %s@." wid (Queue.length files) file.name;
-  let process =
-    (!Options.colis_cmd,
-     Array.of_list
-       (["--shell"; "--run-symbolic";
-         "--symbolic-fs"; "simple";
-         "--fail-on-unknown-utilities";
-         "--external-sources"; "/external_sources";
-         "--cpu-time-limit"; string_of_int !Options.cpu_timeout;
-         file.name;
-         "--"] @ args))
+let find_packages () =
+  (* FIXME. For now, we are doing it that way. But this will change. *)
+  let packages = ref [] in
+  let add_package package =
+    packages := package :: !packages
   in
-  Lwt.catch
-    (fun () ->
-      Lwt_process.with_process_full
-        ~timeout:!Options.timeout
-        process (report_from_process file)
-      >>= fun report ->
-      Queue.add report reports;
-      Lwt.return ())
-    (function
-     | Lwt_io.Channel_closed _ ->
-        (* Timeout where closing the channels was faster than
-             receiving the SIGKILL signal. *)
-        Queue.add { file ; status = WSIGNALED Sys.sigkill ; stdout = "" ; stderr = "" } reports;
-        Lwt.return ()
-     | _exn ->
-        (* FIXME *)
-        Lwt.return ())
-
-let rec worker wid =
-  try
-    let file = Queue.pop files in
-    let args = args_from_file (Filename.basename file.name) in
-    Lwt_list.iter_s (worker_process_args wid file) args
-    >>= fun () ->
-    worker wid
-  with
-  | Queue.Empty -> Lwt.return ()
-
-let workers n =
-  List.init n worker
-  |> Lwt.join
-
-(* Report *)
-
-type reports_group =
-  { id : int ;
-    files : file list ;
-    number : int ;
-    status : process_status ;
-    short_stdout : string ;
-    stdout : string ;
-    short_stderr : string ;
-    stderr : string }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-let reports_groups_list_from_reports_list reports =
-  let shorten_out s =
-    match String.split_on_char '\n' s with
-    | [] -> ""
-    | [e] | [e;""] -> e
-    | e :: _ -> e ^ "\n[...]"
+  let rec find_packages prefix =
+    Sys.readdir prefix
+    |> Array.iter
+      (fun fname ->
+         let path = Filename.concat prefix fname in
+         if Sys.is_directory path then
+           find_packages path
+         else if List.mem fname ["preinst"; "postinst"; "prerm"; "postrm"] then
+           add_package prefix)
   in
-  let compare_group (r1 : report) (r2 : report) =
-    let c = compare r1.status r2.status in
-    if c <> 0 then c
-    else
-      let c = compare r1.stdout r2.stdout in
-      if c <> 0 then c
-      else
-        let c = compare r1.stderr r2.stderr in
-        c
-  in
-  let add_to_group (report : report) (group : reports_group) =
-    { group with files = report.file :: group.files ; number = group.number + 1 }
-  in
-  let rec group_aux (prev : report) curr = function
-    | [] ->
-       [curr]
-    | h :: q ->
-       if compare_group prev h = 0 then
-         group_aux prev (add_to_group h curr) q
-       else
-         curr :: group (h :: q)
-  and group = function
+  find_packages !Options.corpus;
+  List.sort_uniq compare !packages
+
+let split_packages wid =
+  let rec split_packages n = function
     | [] -> []
-    | h :: q -> group_aux
-                  h
-                  { id = 0 ;
-                    files = [(h : report).file] ; number = 1 ; status = h.status ;
-                    short_stdout = shorten_out h.stdout ; stdout = h.stdout ;
-                    short_stderr = shorten_out h.stderr ; stderr = h.stderr }
-                  q
+    | h :: q when n mod !Options.workers = wid ->
+      h :: split_packages (n+1) q
+    | _ :: q ->
+      split_packages (n+1) q
   in
-  List.sort compare_group reports
-  |> group
-  |> List.map (fun g -> { g with id = Hashtbl.hash g.files })
-  |> List.sort (fun g1 g2 -> - compare (List.length g1.files) (List.length g2.files))
+  split_packages 0
 
-type reports_groups_list =
-  { number : int ;
-    number_of_groups : int ;
-    percentage_total : float ;
-    percentage_previous : float ;
-    groups : reports_group list }
-[@@deriving to_protocol ~driver:(module Jsonm)]
+let parse_if_exists package file =
+  let path = Filename.concat package file in
+  if Sys.file_exists path then
+    (
+      try
+        let colis = Colis.parse_shell_file path in
+        Stats.(set_parsing_status package file Accepted);
+        Some colis
+      with
+        exn ->
+        Stats.(
+          set_parsing_status
+            package file
+            (match exn with
+             | Colis.Errors.ParseError (msg, _) -> MorbigRejected msg
+             | Colis.Errors.ConversionError msg -> ConversionRejected msg
+             | _ -> Unexpected (Printexc.to_string exn))
+        );
+        raise exn
+    )
+  else
+    None
 
-let report_list_from_report_list ~total ~previous reports =
-  let number = List.length reports in
-  let percentage_total = floor (10000. *. (float number) /. (float total)) /. 100. in
-  let percentage_previous = floor (10000. *. (float number) /. (float previous)) /. 100. in
-  let groups = reports_groups_list_from_reports_list reports in
-  { number ; percentage_total ; percentage_previous ; number_of_groups = List.length groups ; groups }
+type package = {
+  name : string ;
+  scripts : (string * Colis.colis option) list ;
+}
 
-type parameters =
-  { timeout : float ;
-    cpu_timeout : int }
-[@@deriving to_protocol ~driver:(module Jsonm)]
+let parse_package package =
+  try
+    Some {
+      name = package ;
+      scripts = List.map
+          (fun script -> (script, parse_if_exists package script))
+          Constant.scripts ;
+    }
+  with
+    _ -> None
 
-type infos =
-  { total : int ;
-    date : string ;
-    duration : float ;
-    workers : int }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-type generic_report =
-  { success : reports_groups_list ;
-    error : reports_groups_list }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-type execution_report =
-  { success : reports_groups_list ;
-    error : reports_groups_list ;
-    timeout : reports_groups_list }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-type verification_report =
-  { success : reports_groups_list ;
-    error : reports_groups_list ;
-    incomplete : reports_groups_list }
-[@@deriving to_protocol ~driver:(module Jsonm)]
-
-type full_report =
-  { parameters : parameters ;
-    infos : infos ;
-    parsing : generic_report ;
-    conversion : generic_report ;
-    execution : execution_report ;
-    verification : verification_report ;
-    other_error : reports_groups_list ;
-    all : reports_groups_list }
-    [@@deriving to_protocol ~driver:(module Jsonm)]
-
-let is_verification_success (report : report) = report.status = Unix.WEXITED 0
-let is_verification_incomplete (report : report) = report.status = Unix.WEXITED 10
-let is_verification_error (report : report) = report.status = Unix.WEXITED 1
-let is_execution_timeout (report : report) = report.status = Unix.WSIGNALED Sys.sigkill || report.status = Unix.WEXITED 11
-let is_execution_error (report : report) = report.status = Unix.WEXITED 7 || report.status = Unix.WEXITED 8
-let is_conversion_error (report : report) = report.status = Unix.WEXITED 6
-let is_parsing_error (report : report) = report.status = Unix.WEXITED 5
-let is_other_error (report : report) =
-  not (is_verification_success report || is_verification_error report
-       || is_execution_timeout report || is_execution_error report
-       || is_conversion_error report || is_parsing_error report)
-
-let generate_report ~duration () =
-  let reports = Queue.to_seq reports |> List.of_seq in
-  let total = List.length reports in
-  let all = report_list_from_report_list ~total ~previous:total reports in
-
-  let parameters = { timeout = !Options.timeout ; cpu_timeout = !Options.cpu_timeout } in
-
-  let date =
-    let open Unix in
-    let tm = localtime (time ()) in
-    spf "%04d-%02d-%02d %02d:%02d:%02d"
-      (1900 + tm.tm_year) (1 + tm.tm_mon) tm.tm_mday tm.tm_hour tm.tm_min tm.tm_sec
-  in
-  let infos = { total ; date ; duration ; workers = !Options.workers } in
-
-  let other_error, reports =
-    List.partition is_other_error reports
-  in
-  let other_error = report_list_from_report_list ~total ~previous:total other_error in
-  let previous = List.length reports in
-
-  let parsing_error, reports =
-    List.partition is_parsing_error reports
-  in
-  let parsing =
-    { success = report_list_from_report_list ~total ~previous reports ;
-      error = report_list_from_report_list ~total ~previous parsing_error }
-  in
-  let previous = List.length reports in
-
-  let conversion_error, reports =
-    List.partition is_conversion_error reports
-  in
-  let conversion =
-    { success = report_list_from_report_list ~total ~previous reports ;
-      error = report_list_from_report_list ~total ~previous conversion_error }
-  in
-  let previous = List.length reports in
-
-  let execution_error, reports =
-    List.partition is_execution_error reports
-  in
-  let execution_timeout, reports =
-    List.partition is_execution_timeout reports
-  in
-  let execution =
-    { success = report_list_from_report_list ~total ~previous reports ;
-      timeout = report_list_from_report_list ~total ~previous execution_timeout ;
-      error = report_list_from_report_list ~total ~previous execution_error }
-  in
-  let previous = List.length reports in
-
-  let verification_error, reports =
-    List.partition is_verification_error reports
-  in
-  let verification_incomplete, reports =
-    List.partition is_verification_incomplete reports
-  in
-  let verification_success, reports =
-    List.partition is_verification_success reports
-  in
-  assert (reports = []);
-  let verification =
-    { success = report_list_from_report_list ~total ~previous verification_success ;
-      error = report_list_from_report_list ~total ~previous verification_error ;
-      incomplete = report_list_from_report_list ~total ~previous verification_incomplete }
-  in
-
-  { parameters ; infos ; parsing ; conversion ; execution ; verification ; other_error ; all }
-
-let full_report_to_json full_report =
-  match full_report_to_jsonm full_report with
-  | `O json -> `O json
-  | _ -> assert false
-
-let reports_group_to_json reports_group =
-  match reports_group_to_jsonm reports_group with
-  | `O json -> `O json
-  | _ -> assert false
-
-let file_to_json file =
-  match file_to_jsonm file with
-  | `O json -> `O json
-  | _ -> assert false
-
-module Report = struct
-  let render_template ~template ~output ~json =
-    let template = Filename.concat !Options.template_prefix (template ^ ".html") in
-    let output = Filename.concat !Options.report_prefix (output ^ ".html") in
-    let template =
-      let ichan = open_in template in
-      let template = ichan |> Lexing.from_channel |> Mustache.parse_lx in
-      close_in ichan;
-      template
-    in
-    let ochan = open_out output in
-    let fmt = Format.formatter_of_out_channel ochan in
-    Mustache.render_fmt fmt template json;
-    Format.pp_print_flush fmt ();
-    close_out ochan
-
-  let render_json json =
-    let output = Filename.concat !Options.report_prefix "report.json" in
-    let ochan = open_out output in
-    output_string ochan (Ezjsonm.to_string ~minify:false json);
-    close_out ochan
-
-  let render_index json =
-    render_template ~template:"index" ~output:"index" ~json
-
-  let render_reports_group reports_group =
-    let json = reports_group_to_json reports_group in
-    render_template ~template:"group" ~output:("group-" ^ (string_of_int reports_group.id)) ~json
-
-  let render_file file =
-    let json = file_to_json file in
-    render_template ~template:"file" ~output:("file-" ^ (string_of_int file.id)) ~json
-
-  let render report =
-    let json = full_report_to_json report in
-    render_json json;
-    render_index json;
-    List.iter
-      (fun reports_group ->
-        render_reports_group reports_group;
-        List.iter render_file reports_group.files)
-      report.all.groups
-end
-
-let main () =
-  (* Read all file names from standard input. For each file, get its
-     content and put everything on the processing queue. *)
-  Lwt_io.(read_lines stdin)
-  |> Lwt_stream.iter_n
-       ~max_concurrency:8
-       (fun name ->
-         Lwt_io.with_file
-           ~mode:Input
-           name
-           (fun chan ->
-             Lwt_io.read chan >>= fun content ->
-             Queue.add { id = Hashtbl.hash name ; name ; content } files;
-             Lwt.return ()))
-
-  (* Start workers that will read the processing queue and run
-     CoLiS-language on each input. *)
-  >>= fun () ->
-  let start_time = Unix.gettimeofday () in
-  workers !Options.workers >>= fun () ->
-  let duration = Unix.gettimeofday () -. start_time in
-
-  (* Render the report and exit. *)
-  Report.render (generate_report ~duration ());
-  Lwt_io.eprintf "Done!\n"
+let symbexec_package package =
+  List.iter
+    (fun script_name ->
+       match List.assoc script_name package.scripts with
+       | None -> ()
+       | Some script ->
+         Colis.run_symbolic
+           Options.symbolic_config
+           Colis.Symbolic.FilesystemSpec.empty (* FIXME *)
+           ~argument0:script_name
+           ~arguments:["install"] (* FIXME *)
+           ~vars:[
+             "DPKG_MAINTSCRIPT_NAME", script_name;
+             "DPKG_MAINTSCRIPT_PACKAGE", package.name;
+           ]
+           script)
+    Constant.scripts
 
 let () =
-  Lwt_main.run (main ())
+  (
+    try
+      Options.parse_command_line ();
+      Options.check_values ()
+    with
+      Arg.Bad msg ->
+      print_endline msg;
+      print_newline ();
+      Options.print_usage ();
+      exit 1
+  );
+  (* FIXME: The following is super dirty and should be fixed in Colis-Language
+    where the CPU timeout should be an option. And it's actually buggy because
+    this will only consider the time from the beginning of all the execution. *)
+  Constraints_common.Log.cpu_time_limit := Some (!Options.cpu_timeout);
+  Colis.Options.external_sources := !Options.external_sources
+
+let () =
+  find_packages ()
+  |> List.map parse_package
+  |> List.iter (function
+      | None -> ()
+      | Some package -> symbexec_package package
+    )

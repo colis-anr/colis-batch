@@ -1,5 +1,4 @@
 (executable
  (name batch)
  (public_name colis-batch)
- (libraries lwt.unix mustache ppx_protocol_conv_jsonm)
- (preprocess (pps ppx_protocol_conv)))
+ (libraries colis-language))
