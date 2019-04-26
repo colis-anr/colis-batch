@@ -1,61 +1,57 @@
-type parsing_status =
+type maintscript_parsing_status =
   | Unexpected of string
-  | MorbigRejected of string
+  | ParsingRejected of string
   | ConversionRejected of string
   | Accepted
 
-type script_stats = {
-  mutable parsing_status : parsing_status
+type maintscript_stats = {
+  mutable parsing_status : maintscript_parsing_status
+}
+
+let dummy_maintscript_stats = {
+  parsing_status = Unexpected "not parsed yet" ;
 }
 
 type package_stats = {
-  mutable preinst  : script_stats option ;
-  mutable postinst : script_stats option ;
-  mutable prerm    : script_stats option ;
-  mutable postrm   : script_stats option ;
+  mutable maintscripts : (Maintscript.name * maintscript_stats option) list
 }
 
-let by_script : ((string * string), script_stats) Hashtbl.t = Hashtbl.create 30000
-let by_package = Hashtbl.create 10000
+let dummy_package_stats = {
+  maintscripts = List.map (fun maintscript -> (maintscript, None)) Maintscript.all_names ;
+}
 
-let get_package_stats package =
-  match Hashtbl.find_opt by_package package with
+let by_maintscript : (string * Maintscript.name, maintscript_stats) Hashtbl.t =
+  Hashtbl.create 30000
+let by_package : (string, package_stats) Hashtbl.t =
+  Hashtbl.create 10000
+
+let get_package_stats ~name =
+  match Hashtbl.find_opt by_package name with
   | None ->
-    let package_stats = {
-      preinst = None ;
-      postinst = None ;
-      prerm = None ;
-      postrm = None ;
-    } in
-    Hashtbl.add by_package package package_stats;
-    package_stats
+    Hashtbl.add by_package name dummy_package_stats;
+    dummy_package_stats
   | Some package_stats -> package_stats
 
-let get_script_stats package script =
-  let package_stats = get_package_stats package in
-  let script_stats =
-    match script with
-    | "preinst"  -> package_stats.preinst
-    | "postinst" -> package_stats.postinst
-    | "prerm"    -> package_stats.prerm
-    | "postrm"   -> package_stats.postrm
-    | _ -> failwith "get_script_stats"
-  in
-  match script_stats with
+let get_maintscript_stats ~package ~name =
+  let package_stats = get_package_stats ~name:package in
+  match List.assoc name package_stats.maintscripts with
   | None ->
-    let script_stats = {
-      parsing_status = Unexpected "has not been parsed" ;
-    } in
-    (match script with
-     | "preinst"  -> package_stats.preinst  <- Some script_stats
-     | "postinst" -> package_stats.postinst <- Some script_stats
-     | "prerm"    -> package_stats.prerm    <- Some script_stats
-     | "postrm"   -> package_stats.postrm   <- Some script_stats
-     | _ -> assert false);
-    Hashtbl.add by_script (package, script) script_stats;
-    script_stats
-  | Some script_stats ->
-    script_stats
+    package_stats.maintscripts <- ExtList.update_assoc name (Some dummy_maintscript_stats) package_stats.maintscripts;
+    Hashtbl.add by_maintscript (package, name) dummy_maintscript_stats;
+    dummy_maintscript_stats
+  | Some maintscript_stats ->
+    maintscript_stats
 
-let set_parsing_status package script status =
-  (get_script_stats package script).parsing_status <- status
+let set_maintscript_parsing_status ~package ~maintscript status =
+  (get_maintscript_stats ~package ~name:maintscript).parsing_status <- status
+
+let set_maintscript_parsing_status_from_exn ~package ~maintscript exn =
+  set_maintscript_parsing_status ~package ~maintscript
+    (match exn with
+     | Colis.Errors.ParseError (msg, _pos) -> ParsingRejected msg
+     | Colis.Errors.ConversionError msg -> ConversionRejected msg
+     | exn -> Unexpected (Printexc.to_string exn))
+
+let set_maintscript_absence ~package ~maintscript =
+  let package_stats = get_package_stats ~name:package in
+  package_stats.maintscripts <- ExtList.update_assoc maintscript None package_stats.maintscripts
