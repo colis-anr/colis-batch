@@ -22,7 +22,8 @@ let find_packages () =
   |> Array.to_list
 
 let () =
-  find_packages ()
-  |> List.iter
-    (fun package ->
-       ignore (Package.parse ~name:package))
+  let packages = find_packages () in
+  Format.printf "Found %d packages.@." (List.length packages);
+  let parsed_packages = ExtList.map_filter Package.parse packages in
+  Format.printf "Parsed %d packages successfully.@." (List.length parsed_packages);
+  HtmlReport.generate_and_write ()
