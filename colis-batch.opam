@@ -18,6 +18,7 @@ pin-depends: [
   [ "colis-language.dev" "git+https://github.com/colis-anr/colis-language.git" ]
 
   # We must add CoLiS-language's pinned dependencies
+  [ "morbig.dev"   "git+https://github.com/colis-anr/morbig.git" ]
   [ "morsmall.dev" "git+https://github.com/colis-anr/morsmall.git" ]
   [ "why3.dev"     "git+https://gitlab.inria.fr/why3/why3.git#c0758c6b" ]
 ]
