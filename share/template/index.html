@@ -78,13 +78,13 @@
 	<!-- Success to verify a clean script -->
 	<tr style="height: {{verification.success.percentage_total}}%;">
 	  <td class="success" rowspan="6">
-	    Success<br/>
+	    Accepted<br/>
 	    {{parsing.success.number}}
 	    ({{parsing.success.percentage_total}}% of all;
 	    {{parsing.success.percentage_previous}}% of expected runs)
 	  </td>
 	  <td class="success" rowspan="5">
-	    Success<br/>
+	    Accepted<br/>
 	    {{conversion.success.number}}
 	    ({{conversion.success.percentage_total}}% of all;
 	    {{conversion.success.percentage_previous}}% of parsed)
@@ -148,7 +148,7 @@
 	<!-- Error during conversion -->
 	<tr style="height: {{conversion.error.percentage_total}}%;">
 	  <td class="error">
-	    <a href="#conversion-error">Error</a><br/>
+	    <a href="#conversion-error">Rejected</a><br/>
 	    {{conversion.error.number}}
 	    ({{conversion.error.percentage_total}}% of all;
 	    {{conversion.error.percentage_previous}}% of parsed)
@@ -159,7 +159,7 @@
 	<!-- Error during parsing -->
 	<tr style="height: {{parsing.error.percentage_total}}%;">
 	  <td class="rejected">
-	    <a href="#parsing-error">Error</a><br/>
+	    <a href="#parsing-error">Rejected</a><br/>
 	    {{parsing.error.number}}
 	    ({{parsing.error.percentage_total}}% of all;
 	    {{parsing.error.percentage_previous}}% of expected runs)
