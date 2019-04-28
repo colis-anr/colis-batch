@@ -63,7 +63,7 @@ let worker_process_args wid file args =
     (!Options.colis_cmd,
      Array.of_list
        (["--shell"; "--run-symbolic";
-         "--symbolic-fs"; "simple";
+         "--add-symbolic-fs"; "simple.fs";
          "--fail-on-unknown-utilities";
          "--external-sources"; "/external_sources";
          "--cpu-time-limit"; string_of_int !Options.cpu_timeout;
