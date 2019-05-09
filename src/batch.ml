@@ -26,4 +26,5 @@ let () =
   Format.printf "Found %d packages.@." (List.length packages);
   let parsed_packages = ExtList.map_filter Package.parse packages in
   Format.printf "Parsed %d packages successfully.@." (List.length parsed_packages);
+  let _statuses = List.map Scenario.install parsed_packages in
   HtmlReport.generate_and_write ()

@@ -30,7 +30,7 @@ let check_values () =
     raise (Arg.Bad (spf "Corpus directory (%s) must exist." !corpus));
   if not (!cpu_timeout > 0.) then
     raise (Arg.Bad (spf "CPU timeout (%.0f) must be positive." !cpu_timeout));
-  if Sys.(file_exists !external_sources && is_directory !external_sources) then
+  if not Sys.(file_exists !external_sources && is_directory !external_sources) then
     raise (Arg.Bad (spf "External sources directory (%s) must exist." !external_sources));
   if Sys.file_exists !report then
     raise (Arg.Bad (spf "Report directory (%s) must not exist." !report));

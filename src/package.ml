@@ -4,10 +4,11 @@ type name = string
 
 type t =
   { name : name ;
-    maintscripts : (Maintscript.name * Colis.colis option) list }
+    maintscripts : (Maintscript.name * Morsmall.AST.program option) list }
 
 let name pkg = pkg.name
 let maintscripts pkg = pkg.maintscripts
+let maintscript pkg name = List.assoc name pkg.maintscripts
 
 let parse_maintscripts ~package =
   let maintscripts =
@@ -20,9 +21,10 @@ let parse_maintscripts ~package =
            try
              let shell = Morsmall.parse_file maintscript_path in
              try
-               let colis = Colis.Language.FromShell.program__to__program shell in
+               (* We try to convert with dummy arguments to see if we really can. *)
+               let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUMMY"] shell in
                Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionAccepted ())));
-               Some (maintscript, Some colis)
+               Some (maintscript, Some shell)
              with
              | exn ->
                Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (
@@ -55,3 +57,11 @@ let parse name =
   | Some maintscripts ->
     Stats.(set_package_status ~package:name (ParsingAccepted ()));
     Some { name ; maintscripts }
+
+type status =
+  | Installed
+  | FailedConfig
+  | NotInstalled
+  | HalfInstalled
+  | ConfigFiles
+  | Unpacked
