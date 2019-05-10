@@ -17,8 +17,8 @@ let dummy_maintscript_stats () = {
 }
 
 type package = {
-  mutable maintscripts : (Maintscript.name * maintscript option) list ;
   mutable status : unit parsing ;
+  mutable maintscripts : (Maintscript.name * maintscript option) list ;
 }
 
 let dummy_package_stats () = {

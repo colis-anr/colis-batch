@@ -1,7 +1,16 @@
-type error_outcome =
-    Incomplete | Timeout
+type success_outcome =
+  | Installed
+  | FailedConfig
+  | NotInstalled
+  | HalfInstalled
+  | ConfigFiles
+  | Unpacked
 
-type outcome = (Package.status, error_outcome) result
+type error_outcome =
+  | Incomplete
+  | Timeout
+
+type outcome = (success_outcome, error_outcome) result
 
 let run_script ~cmd_line_arguments ~states ~package script =
   match Package.maintscript package script with
@@ -40,8 +49,8 @@ let install package =
     run_script_and_sort_status
       ~cmd_line_arguments:["configure"]
       ~states ~package
-      ~success_outcome:(Ok Package.Installed)
-      ~error_outcome:(Ok Package.FailedConfig)
+      ~success_outcome:(Ok Installed)
+      ~error_outcome:(Ok FailedConfig)
       ~incomplete_outcome:(Error Incomplete)
       Maintscript.Postinst
   in
@@ -52,8 +61,8 @@ let install package =
     run_script_and_sort_status
       ~cmd_line_arguments:["abort-install"]
       ~states ~package
-      ~success_outcome:(Ok Package.NotInstalled)
-      ~error_outcome:(Ok Package.HalfInstalled)
+      ~success_outcome:(Ok NotInstalled)
+      ~error_outcome:(Ok HalfInstalled)
       ~incomplete_outcome:(Error Incomplete)
       Maintscript.Postrm
   in

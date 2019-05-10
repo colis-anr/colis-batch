@@ -57,11 +57,3 @@ let parse name =
   | Some maintscripts ->
     Stats.(set_package_status ~package:name (ParsingAccepted ()));
     Some { name ; maintscripts }
-
-type status =
-  | Installed
-  | FailedConfig
-  | NotInstalled
-  | HalfInstalled
-  | ConfigFiles
-  | Unpacked

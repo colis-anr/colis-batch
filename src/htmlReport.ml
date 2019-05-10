@@ -4,43 +4,30 @@ let foi = float_of_int
 let percentage a b =
   100. *. (foi a) /. (foi b)
 
-let header = {|
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>CoLiS-Language Covering</title>
+let pp_header ~title fmt () =
+  fpf fmt {|
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>%s</title>
 
-      <meta charset="utf-8" />
-      <style type="text/css">
-        body {
-  	      width: 80%;
-      	  margin: auto;
-        }
-        .hidden {
-          display: none;
-        }
-        .accepted {
-          background: #afa;
-        }
-        .rejected {
-          background: #aaf;
-        }
-        .errored {
-          background: #faa;
-        }
-        .empty {
-          background: #ddd;
-        }
-      </style>
-    </head>
-    <body>
-      <h1>CoLiS-Language Covering</h1>
-|}
+        <meta charset="utf-8" />
+        <style type="text/css">
+          body { width: 80%%; margin: auto; }
+          .hidden { display: none; }
+          .accepted { background: #afa; }
+          .rejected { background: #aaf; }
+          .errored  { background: #faa; }
+          .empty    { background: #ddd; }
+        </style>
+      </head>
+      <body>
+        <h1>%s</h1>
+    |}
+    title title
 
-let footer = {|
-    </body>
-  </html>
-|}
+let pp_footer fmt () =
+  fpf fmt "</body></html>"
 
 let pp_package_report fmt package =
   let package_stats = Stats.get_package_stats ~name:package in
@@ -168,12 +155,12 @@ let with_magic_formatter ~path f =
 let generate_and_write_package_report package =
   let path = ExtFilename.concat_l [!Options.report; "package"; package; "index.html"] in
   with_magic_formatter ~path @@ fun fmt ->
-  fpf fmt "%s%a%s" header pp_package_report package footer
+  fpf fmt "%a%a%a" (pp_header ~title:"CoLiS-Language Covering") () pp_package_report package pp_footer ()
 
 let generate_and_write_index () =
   let path = Filename.concat !Options.report "index.html" in
   with_magic_formatter ~path @@ fun fmt ->
-  fpf fmt "%s%a%s" header pp_index () footer
+  fpf fmt "%a%a%a" (pp_header ~title:"CoLiS-Language Covering") () pp_index () pp_footer ()
 
 let generate_and_write () =
   generate_and_write_index ();
