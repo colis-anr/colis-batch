@@ -12,7 +12,7 @@ type error_outcome =
 
 type outcome = (success_outcome, error_outcome) result
 
-let run_script ~cmd_line_arguments ~states ~package script =
+let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
   | None -> (states, [], []) (* Trivial success *)
   | Some shell ->
@@ -32,50 +32,55 @@ let run_script ~cmd_line_arguments ~states ~package script =
       ~argument0:(Maintscript.name_to_string script)
       sym_states colis
 
-let run_script_and_sort_status ~cmd_line_arguments ~states ~package ~success_outcome ~error_outcome ~incomplete_outcome script =
+let set_outcome o = List.map (fun x -> (x, o))
+
+let run_script
+    ~package ~script
+    ~cmd_line_arguments
+    ~states
+    ~on_success_states ~on_error_states ~on_incomplete_states
+  =
   try
     let (success, error, incomplete) =
-      run_script ~cmd_line_arguments ~states ~package script
+      run_script ~cmd_line_arguments ~states ~package ~script
     in
-    List.map (fun success -> (success, success_outcome)) success
-    @ List.map (fun error -> (error, error_outcome)) error
-    @ List.map (fun incomplete -> (incomplete, incomplete_outcome)) incomplete
+    on_success_states success
+    @ on_error_states error
+    @ on_incomplete_states incomplete
   with
     Constraints_common.Log.CPU_time_limit_exceeded ->
-    List.map (fun sta -> (sta, Error Timeout)) states
+    [(Obj.magic (), Error Timeout)] (* FIXME *)
 
 let install package =
   let postinst_configure states =
-    run_script_and_sort_status
+    run_script
+      ~package ~script:Maintscript.Postinst
       ~cmd_line_arguments:["configure"]
-      ~states ~package
-      ~success_outcome:(Ok Installed)
-      ~error_outcome:(Ok FailedConfig)
-      ~incomplete_outcome:(Error Incomplete)
-      Maintscript.Postinst
+      ~states
+      ~on_success_states:(set_outcome (Ok Installed))
+      ~on_error_states:(set_outcome (Ok FailedConfig))
+      ~on_incomplete_states:(set_outcome (Error Incomplete))
   in
   let files_unpacking states =
     postinst_configure states (* FIXME *)
   in
   let postrm_abort_install states =
-    run_script_and_sort_status
+    run_script
+      ~package ~script:Maintscript.Postrm
       ~cmd_line_arguments:["abort-install"]
-      ~states ~package
-      ~success_outcome:(Ok NotInstalled)
-      ~error_outcome:(Ok HalfInstalled)
-      ~incomplete_outcome:(Error Incomplete)
-      Maintscript.Postrm
+      ~states
+      ~on_success_states:(set_outcome (Ok NotInstalled))
+      ~on_error_states:(set_outcome (Ok HalfInstalled))
+      ~on_incomplete_states:(set_outcome (Error Incomplete))
   in
   let preinst_install states =
-    let (success, error, incomplete) =
-      run_script
-        ~cmd_line_arguments:["install"]
-        ~states ~package
-        Maintscript.Preinst
-    in
-    files_unpacking success
-    @ postrm_abort_install error
-    @ List.map (fun incomplete -> (incomplete, Error Incomplete)) incomplete
+    run_script
+      ~package ~script:Maintscript.Preinst
+      ~cmd_line_arguments:["install"]
+      ~states
+      ~on_success_states:files_unpacking
+      ~on_error_states:postrm_abort_install
+      ~on_incomplete_states:(set_outcome (Error Incomplete))
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let fs_spec = Colis.Symbolic.FilesystemSpec.empty in
