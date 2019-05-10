@@ -1,11 +1,12 @@
 let fpf = Format.fprintf
+let spf = Format.sprintf
 let foi = float_of_int
 
 let percentage a b =
   100. *. (foi a) /. (foi b)
 
-let pp_header ~title fmt () =
-  fpf fmt {|
+let header ~title =
+  spf {|
     <!DOCTYPE html>
     <html>
       <head>
@@ -26,10 +27,9 @@ let pp_header ~title fmt () =
     |}
     title title
 
-let pp_footer fmt () =
-  fpf fmt "</body></html>"
+let footer = "</body></html>"
 
-let pp_package_report fmt package =
+let pp_package fmt package =
   let package_stats = Stats.get_package_stats ~name:package in
   fpf fmt "<table><tr><th>Maintscript</th><th>Status</th><th>Message</th></tr>";
   List.iter
@@ -49,12 +49,12 @@ let pp_package_report fmt package =
          fpf fmt "<tr class=\"%s\"><td>%s</td><td>%s</td><td>%s</td></tr>"
            class_ (Maintscript.name_to_string maintscript) status message
        | None ->
-         fpf fmt "<tr><td>%s</td><td>Absent</td><td></td></tr>"
+         fpf fmt "<tr class=\"empty\"><td>%s</td><td>Absent</td><td></td></tr>"
            (Maintscript.name_to_string maintscript))
     package_stats.maintscripts;
   fpf fmt "</table>"
 
-let pp_index fmt () =
+let pp fmt () =
   let () =
     let nb_all = ref 0 in
     let nb_accepted = ref 0 in
@@ -144,6 +144,10 @@ let pp_index fmt () =
   in
   ()
 
+(* ************************************************************************** *)
+(* Now that we have written prettys-printer, we generate an arborescence of
+   HTML file with them. *)
+
 let with_magic_formatter ~path f =
   ignore (Sys.command ("mkdir -p " ^ (Filename.dirname path)));
   let out = open_out path in
@@ -152,16 +156,27 @@ let with_magic_formatter ~path f =
   fpf fmt "@?"; close_out out;
   match a with Ok x -> x | Error e -> raise e
 
-let generate_and_write_package_report package =
+let gaw_package package =
   let path = ExtFilename.concat_l [!Options.report; "package"; package; "index.html"] in
   with_magic_formatter ~path @@ fun fmt ->
-  fpf fmt "%a%a%a" (pp_header ~title:"CoLiS-Language Covering") () pp_package_report package pp_footer ()
+  fpf fmt "%s%a%s" (header ~title:"CoLiS-Language Covering") pp_package package footer
+  (* FIXME: generate pages for maintscripts *)
 
-let generate_and_write_index () =
+let gaw_packages () =
+  let path = ExtFilename.concat_l [!Options.report; "package"; "index.html"] in
+  with_magic_formatter ~path @@ fun fmt ->
+  fpf fmt "%s<ul>" (header ~title:"FIXME");
+  Hashtbl.iter
+    (fun package _ ->
+       gaw_package package;
+       fpf fmt "<li><a href=\"%s\">%s</a></li>" package package)
+    Stats.by_package;
+  fpf fmt "</ul>%s" footer
+
+let gaw () =
   let path = Filename.concat !Options.report "index.html" in
   with_magic_formatter ~path @@ fun fmt ->
-  fpf fmt "%a%a%a" (pp_header ~title:"CoLiS-Language Covering") () pp_index () pp_footer ()
+  fpf fmt "%s%a%s" (header ~title:"CoLiS-Language Covering") pp () footer;
+  gaw_packages ()
 
-let generate_and_write () =
-  generate_and_write_index ();
-  Hashtbl.iter (fun package _ -> generate_and_write_package_report package) Stats.by_package
+let generate_and_write = gaw
