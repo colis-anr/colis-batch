@@ -12,18 +12,24 @@ type maintscript = {
   mutable status : unit conversion parsing ;
 }
 
-let dummy_maintscript_stats () = {
+let dummy_maintscript () = {
   status = ParsingErrored "not parsed yet" ;
+}
+
+type scenario = {
+  mutable outcomes : (ScenariiHelper.outcome * int) list ;
 }
 
 type package = {
   mutable status : unit parsing ;
   mutable maintscripts : (Maintscript.name * maintscript option) list ;
+  mutable scenarii : (ScenariiHelper.name * scenario) list ;
 }
 
-let dummy_package_stats () = {
-  maintscripts = List.map (fun maintscript -> (maintscript, None)) Maintscript.all_names ;
+let dummy_package () = {
   status = ParsingErrored "not parsed yet" ;
+  maintscripts = List.map (fun maintscript -> (maintscript, None)) Maintscript.all_names ;
+  scenarii = [] ;
 }
 
 let by_package : (string, package) Hashtbl.t =
@@ -32,7 +38,7 @@ let by_package : (string, package) Hashtbl.t =
 let get_package_stats ~name =
   match Hashtbl.find_opt by_package name with
   | None ->
-    let package_stats = dummy_package_stats () in
+    let package_stats = dummy_package () in
     Hashtbl.add by_package name package_stats;
     package_stats
   | Some package_stats -> package_stats
@@ -41,7 +47,7 @@ let get_maintscript_stats ~package ~name =
   let package_stats = get_package_stats ~name:package in
   match List.assoc name package_stats.maintscripts with
   | None ->
-    let maintscript_stats = dummy_maintscript_stats () in
+    let maintscript_stats = dummy_maintscript () in
     package_stats.maintscripts <- ExtList.update_assoc name (Some maintscript_stats) package_stats.maintscripts;
     maintscript_stats
   | Some maintscript_stats ->

@@ -1,16 +1,4 @@
-type success_outcome =
-  | Installed
-  | FailedConfig
-  | NotInstalled
-  | HalfInstalled
-  | ConfigFiles
-  | Unpacked
-
-type error_outcome =
-  | Incomplete
-  | Timeout
-
-type outcome = (success_outcome, error_outcome) result
+open ScenariiHelper
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
