@@ -88,18 +88,24 @@ let pp fmt () =
     let nb_conversion_rejected = ref 0 in
     let nb_conversion_errored = ref 0 in
     Hashtbl.iter
-      (fun _ maintscript_stats ->
-         incr nb_all;
-         match (maintscript_stats : Stats.maintscript).status with
-         | ParsingErrored _ -> incr nb_parsing_errored
-         | ParsingRejected -> incr nb_parsing_rejected
-         | ParsingAccepted status ->
-           incr nb_parsing_accepted;
-           match status with
-           | ConversionErrored _ -> incr nb_conversion_errored
-           | ConversionRejected _ -> incr nb_conversion_rejected
-           | ConversionAccepted () -> incr nb_conversion_accepted)
-      Stats.by_maintscript;
+      (fun _ package_stats ->
+         List.iter
+           (fun (_, maintscript_stats) ->
+              match maintscript_stats with
+              | None -> ()
+              | Some maintscript_stats ->
+                incr nb_all;
+                match (maintscript_stats : Stats.maintscript).status with
+                | ParsingErrored _ -> incr nb_parsing_errored
+                | ParsingRejected -> incr nb_parsing_rejected
+                | ParsingAccepted status ->
+                  incr nb_parsing_accepted;
+                  match status with
+                  | ConversionErrored _ -> incr nb_conversion_errored
+                  | ConversionRejected _ -> incr nb_conversion_rejected
+                  | ConversionAccepted () -> incr nb_conversion_accepted)
+           package_stats.Stats.maintscripts)
+      Stats.by_package;
     let hidden = function
       | 0 -> "hidden"
       | _ -> ""

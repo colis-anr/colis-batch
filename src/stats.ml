@@ -26,8 +26,6 @@ let dummy_package_stats () = {
   status = ParsingErrored "not parsed yet" ;
 }
 
-let by_maintscript : (string * Maintscript.name, maintscript) Hashtbl.t =
-  Hashtbl.create 30000
 let by_package : (string, package) Hashtbl.t =
   Hashtbl.create 10000
 
@@ -45,7 +43,6 @@ let get_maintscript_stats ~package ~name =
   | None ->
     let maintscript_stats = dummy_maintscript_stats () in
     package_stats.maintscripts <- ExtList.update_assoc name (Some maintscript_stats) package_stats.maintscripts;
-    Hashtbl.add by_maintscript (package, name) maintscript_stats;
     maintscript_stats
   | Some maintscript_stats ->
     maintscript_stats

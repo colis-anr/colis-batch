@@ -83,7 +83,7 @@ let install package =
       ~on_incomplete_states:(set_outcome (Error Incomplete))
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
-  let fs_spec = Colis.Symbolic.FilesystemSpec.empty in
+  let fs_spec = Colis.Symbolic.FilesystemSpec.empty in (* FIXME *)
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fs_spec in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
   preinst_install stas
