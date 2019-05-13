@@ -31,9 +31,11 @@ let () =
   pf "@\n%a@\n@." Scenario.(pp (fun _ _ -> ())) Scenario.installation;
   List.iter
     (fun package ->
-       pf "Package: %s@\n%a@\n@."
+       let scenario = (Scenario.install package) in
+       pf "Package: %s@\n%a@\n@\n%a@\n@."
          (Package.name package)
-         Scenario.(pp pp_ran) (Scenario.install package))
+         Scenario.(pp pp_ran) scenario
+         Scenario.pp_as_dot scenario)
     parsed_packages;
   pf "Generating report.@.";
   HtmlReport.generate_and_write ()

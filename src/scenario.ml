@@ -78,15 +78,13 @@ let rec pp pp_a fmt sc =
 type colis_state = Colis.Symbolic.Semantics.state
 
 type ran =
-  { states_before : colis_state list ;
-    states_after : colis_state list ;
+  { states : colis_state list ;
     incomplete : colis_state list ;
     timeout : bool }
 
 let pp_ran fmt ran =
-  fpf fmt "(states before: %d; after: %d%s%s)"
-    (List.length ran.states_before)
-    (List.length ran.states_after)
+  fpf fmt "(states before: %d%s%s)"
+    (List.length ran.states)
     (let s = List.length ran.incomplete in
      if s = 0 then "" else spf "; %d incomplete" s)
     (if ran.timeout then "; timeout" else "")
@@ -113,6 +111,39 @@ let installation = (* FIXME: unpack *)
         ~on_error:(status HalfInstalled)
     )
 
+let pp_as_dot fmt sc =
+  fpf fmt "digraph FIXME {@\n@[<h 2>  node[shape=Mrecord];@\n@\n";
+  let rec pp_as_dot ?parent sc =
+    let n = Hashtbl.hash sc in
+    (
+      match sc.scenario with
+      | Status status ->
+        fpf fmt "%d [label=\"%a\",shape=none];@\n"
+          n
+          pp_status status
+      | Action (action, on_success, on_error) ->
+        fpf fmt "%d [label=\"{%a%s%s}\"];@\n"
+          n
+          pp_action action
+          (match List.length sc.data.incomplete with
+           | 0 -> ""
+           | l -> spf "|%d incomplete" l)
+          (if sc.data.timeout then "|timeout" else "");
+        pp_as_dot ~parent:("OK", n) on_success;
+        pp_as_dot ~parent:("Failed", n) on_error
+    );
+    (
+      match parent with
+      | None -> ()
+      | Some (kind, parent) ->
+        fpf fmt "%d -> %d [label=\"%s\\n%d\"];@\n"
+          parent n
+          kind (List.length sc.data.states)
+    )
+  in
+  pp_as_dot sc;
+  fpf fmt "@]}@."
+
 let all =
   [ Installation, installation ]
 
@@ -126,7 +157,7 @@ let run ~package scenario =
     match scenario.scenario with
     | Status status ->
       { scenario = Status status ;
-        data = { states_before = states ; states_after = states ; incomplete = [] ; timeout = false } }
+        data = { states ; incomplete = [] ; timeout = false } }
     | Action (action, on_success, on_error) ->
       match action with
       | RunScript (script, cmd_line_arguments) ->
@@ -138,7 +169,7 @@ let run ~package scenario =
             (([], [], []), true)
         in
         { scenario = Action (action, run success on_success, run error on_error) ;
-          data = { states_before = states ; states_after = success @ error @ incomplete ; incomplete ; timeout } } (* FIXME: include incompletes? *)
+          data = { states ; incomplete ; timeout } }
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let fs_spec = Colis.Symbolic.FilesystemSpec.empty in (* FIXME *)
