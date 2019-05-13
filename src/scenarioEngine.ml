@@ -20,6 +20,17 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
       ~argument0:(Maintscript.name_to_string script)
       sym_states colis
 
+let create_flowchart ~package ~name ran =
+  let path =
+    ReportHelpers.scenario_path
+     ~package:(Package.name package)
+     ~scenario:(name_to_string name)
+     "flowchart.dot"
+  in
+  (ReportHelpers.with_formatter_to_file path @@ fun fmt ->
+   pp_ran_as_dot ~name fmt ran);
+  assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped path)))
+
 let run ~package ~name scenario =
   let rec run states (scenario : unit t) : ran t =
     match scenario.scenario with
@@ -44,11 +55,5 @@ let run ~package ~name scenario =
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fs_spec in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
   let ran = run stas scenario in
-  ReportHelpers.(with_formatter_to_file
-                   (scenario_path
-                      ~package:(Package.name package)
-                      ~scenario:(name_to_string name)
-                      "flowchart.dot"))
-  @@ fun fmt ->
-  pp_ran_as_dot ~name fmt ran;
+  create_flowchart ~package ~name ran;
   ran
