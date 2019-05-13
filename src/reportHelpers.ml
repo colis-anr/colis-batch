@@ -15,6 +15,10 @@ let scenario_path ?(relative=false) ~package ~scenario file =
   ExtFilename.concat_l ["scenario"; scenario; file]
   |> (package_path ~relative ~package |> or_id_if relative)
 
+let scripts_path ?(relative=false) ~package file =
+  Filename.concat "script" file
+  |> (package_path ~relative ~package |> or_id_if relative)
+
 let rec ensure_existence path =
   let dir = Filename.dirname path in
   if dir <> path then ensure_existence dir;

@@ -6,5 +6,8 @@ module Package : sig
   val pp_scenarii : Format.formatter -> string -> unit
 end
 
+module Script : sig
+  val pp_content : Format.formatter -> string -> string -> unit
+end
 
 val generate_and_write : unit -> unit

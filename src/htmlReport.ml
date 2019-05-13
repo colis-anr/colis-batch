@@ -20,6 +20,14 @@ let pp_header ~title fmt () =
           .errored  { background: #faa; }
           .empty    { background: #ddd; }
         </style>
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/styles/github.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"></script>
+        <script>
+          hljs.initHighlightingOnLoad();
+          hljs.initLineNumbersOnLoad();
+        </script>
       </head>
       <body>
         <h1>%s</h1>
@@ -47,8 +55,11 @@ module Package = struct
                | Stats.ConversionRejected msg -> ("rejected", "Conversion rejected", msg)
                | Stats.ConversionAccepted () -> ("accepted", "Accepted", "")
            in
-           fpf fmt "<tr class=\"%s\"><td>%s</td><td>%s</td><td>%s</td></tr>"
-             class_ (Maintscript.name_to_string maintscript) status message
+           fpf fmt "<tr class=\"%s\"><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>"
+             class_
+             (ReportHelpers.scripts_path ~relative:true ~package ((Maintscript.name_to_string maintscript)^".html"))
+             (Maintscript.name_to_string maintscript)
+             status message
          | None ->
            fpf fmt "<tr class=\"empty\"><td>%s</td><td>Absent</td><td></td></tr>"
              (Maintscript.name_to_string maintscript))
@@ -64,6 +75,24 @@ module Package = struct
            name
            (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "flowchart.dot.png"))
       Scenarii.all
+end
+
+module Script = struct
+  let pp_content fmt package script =
+    fpf fmt "<pre><code class=\"bash\">";
+    let ichan = open_in (ExtFilename.concat_l [!Options.corpus; package; script]) in
+    let buflen = 1024 in
+    let buf = Bytes.create buflen in
+    let rec copy_all () =
+      match input ichan buf 0 buflen with
+      | 0 -> ()
+      | n ->
+        fpf fmt "%s" (Bytes.sub_string buf 0 n);
+        copy_all ()
+    in
+    copy_all ();
+    close_in ichan;
+    fpf fmt "</code></pre>"
 end
 
 (* let pp fmt () =
