@@ -47,10 +47,11 @@ type ran =
 
 type name =
   | Install
+  | Removal
 
 let name_to_string = function
   | Install -> "install"
-
+  | Removal -> "removal"
 
 let pp_action fmt = function
   | RunScript (script, args) ->
