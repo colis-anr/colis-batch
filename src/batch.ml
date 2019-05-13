@@ -28,14 +28,11 @@ let () =
   pf "Found %d packages.@." (List.length packages);
   let parsed_packages = ExtList.map_filter Package.parse packages in
   pf "Parsed %d packages successfully.@." (List.length parsed_packages);
-  pf "@\n%a@\n@." Scenario.(pp (fun _ _ -> ())) Scenario.installation;
   List.iter
     (fun package ->
-       let scenario = (Scenario.install package) in
-       pf "Package: %s@\n%a@\n@\n%a@\n@."
-         (Package.name package)
-         Scenario.(pp pp_ran) scenario
-         Scenario.pp_as_dot scenario)
+       let _scenario = Scenario.(run ~package Install) in
+       pf "Package: %s@."
+         (Package.name package))
     parsed_packages;
   pf "Generating report.@.";
   HtmlReport.generate_and_write ()

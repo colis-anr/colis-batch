@@ -82,6 +82,12 @@ type ran =
     incomplete : colis_state list ;
     timeout : bool }
 
+type name =
+  | Install
+
+let name_to_string = function
+  | Install -> "install"
+
 let pp_ran fmt ran =
   fpf fmt "(states before: %d%s%s)"
     (List.length ran.states)
@@ -89,13 +95,55 @@ let pp_ran fmt ran =
      if s = 0 then "" else spf "; %d incomplete" s)
     (if ran.timeout then "; timeout" else "")
 
-type name =
-  | Installation
+let pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc =
+  let rec pp_as_dot ?parent fmt sc =
+    let n = Hashtbl.hash sc in
+    (
+      match sc.scenario with
+      | Status status ->
+        fpf fmt "%d [label=\"%a\",shape=none];@\n"
+          n
+          pp_status status
+      | Action (action, on_success, on_error) ->
+        fpf fmt "%d [label=\"{%a%a}\"];@\n@\n@[<h 2>  %a@]@\n@[<h 2>  %a@]@\n"
+          n
+          pp_action action
+          pp_action_label sc
+          (pp_as_dot ~parent:("OK", n)) on_success
+          (pp_as_dot ~parent:("Failed", n)) on_error
+    );
+    (
+      match parent with
+      | None -> ()
+      | Some (kind, parent) ->
+        fpf fmt "%d -> %d [label=\"%s%a\"];@\n"
+          parent n kind
+          pp_edge_label sc
+    )
+  in
+  fpf fmt "digraph %s {@\n@[<h 2>  node[shape=Mrecord];@\n@\n%a@]}@."
+    (name_to_string name) (pp_as_dot ?parent:None) sc
 
-let name_to_string = function
-  | Installation -> "Installation"
+let pp_unit_as_dot ~name fmt sc =
+  let pp_nop _ _ = () in
+  pp_as_dot ~pp_action_label:pp_nop ~pp_edge_label:pp_nop ~name fmt sc
 
-let installation = (* FIXME: unpack *)
+let pp_ran_as_dot ~name fmt sc =
+  let pp_action_label fmt sc =
+    (match List.length sc.data.incomplete with
+     | 0 -> ()
+     | l -> fpf fmt "|%d incomplete" l);
+    (if sc.data.timeout then
+       fpf fmt "|timeout")
+  in
+  let pp_edge_label fmt sc =
+    match List.length sc.data.states with
+    | 0 -> ()
+    | l -> fpf fmt "\\n%d" l
+  in
+  pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc
+
+let install = (* FIXME: unpack *)
   action
     ~action:(RunScript (Maintscript.Preinst, ["install"]))
     ~on_success:(
@@ -111,48 +159,15 @@ let installation = (* FIXME: unpack *)
         ~on_error:(status HalfInstalled)
     )
 
-let pp_as_dot fmt sc =
-  fpf fmt "digraph FIXME {@\n@[<h 2>  node[shape=Mrecord];@\n@\n";
-  let rec pp_as_dot ?parent sc =
-    let n = Hashtbl.hash sc in
-    (
-      match sc.scenario with
-      | Status status ->
-        fpf fmt "%d [label=\"%a\",shape=none];@\n"
-          n
-          pp_status status
-      | Action (action, on_success, on_error) ->
-        fpf fmt "%d [label=\"{%a%s%s}\"];@\n"
-          n
-          pp_action action
-          (match List.length sc.data.incomplete with
-           | 0 -> ""
-           | l -> spf "|%d incomplete" l)
-          (if sc.data.timeout then "|timeout" else "");
-        pp_as_dot ~parent:("OK", n) on_success;
-        pp_as_dot ~parent:("Failed", n) on_error
-    );
-    (
-      match parent with
-      | None -> ()
-      | Some (kind, parent) ->
-        fpf fmt "%d -> %d [label=\"%s\\n%d\"];@\n"
-          parent n
-          kind (List.length sc.data.states)
-    )
-  in
-  pp_as_dot sc;
-  fpf fmt "@]}@."
-
 let all =
-  [ Installation, installation ]
+  [ Install, install ]
 
 type output =
   | Status of status * Colis.Symbolic.Semantics.state list (* FIXME *)
   | Action of output * output
   | ActionTimeout
 
-let run ~package scenario =
+let run ~package ~name scenario =
   let rec run states (scenario : unit t) : ran t =
     match scenario.scenario with
     | Status status ->
@@ -175,6 +190,15 @@ let run ~package scenario =
   let fs_spec = Colis.Symbolic.FilesystemSpec.empty in (* FIXME *)
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fs_spec in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
-  run stas scenario
+  let ran = run stas scenario in
+  ReportHelpers.(with_formatter_to_file
+                   (scenario_path
+                      ~package:(Package.name package)
+                      ~scenario:(name_to_string name)
+                      "flowchart.dot"))
+  @@ fun fmt ->
+  pp_ran_as_dot ~name fmt ran;
+  ran
 
-let install package = run ~package installation
+let run ~package name =
+  run ~package ~name (List.assoc name all)
