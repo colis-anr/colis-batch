@@ -1,12 +1,11 @@
 let fpf = Format.fprintf
-let spf = Format.sprintf
-let foi = float_of_int
+(* let foi = float_of_int *)
 
-let percentage a b =
+(* let percentage a b =
   100. *. (foi a) /. (foi b)
-
-let header ~title =
-  spf {|
+ *)
+let pp_header ~title fmt () =
+  fpf fmt {|
     <!DOCTYPE html>
     <html>
       <head>
@@ -27,34 +26,47 @@ let header ~title =
     |}
     title title
 
-let footer = "</body></html>"
+let pp_footer fmt () =
+  fpf fmt "</body></html>"
 
-let pp_package fmt package =
-  let package_stats = Stats.get_package_stats ~name:package in
-  fpf fmt "<table><tr><th>Maintscript</th><th>Status</th><th>Message</th></tr>";
-  List.iter
-    (fun (maintscript, maintscript_stats) ->
-       match maintscript_stats with
-       | Some maintscript_stats ->
-         let (class_, status, message) =
-           match (maintscript_stats : Stats.maintscript).Stats.status with
-           | Stats.ParsingErrored msg -> ("errored", "Error in parsing", msg)
-           | Stats.ParsingRejected -> ("rejected", "Parsing rejected", "")
-           | Stats.ParsingAccepted status ->
-             match status with
-             | Stats.ConversionErrored msg -> ("errored", "Error in conversion", msg)
-             | Stats.ConversionRejected msg -> ("rejected", "Conversion rejected", msg)
-             | Stats.ConversionAccepted () -> ("accepted", "Accepted", "")
-         in
-         fpf fmt "<tr class=\"%s\"><td>%s</td><td>%s</td><td>%s</td></tr>"
-           class_ (Maintscript.name_to_string maintscript) status message
-       | None ->
-         fpf fmt "<tr class=\"empty\"><td>%s</td><td>Absent</td><td></td></tr>"
-           (Maintscript.name_to_string maintscript))
-    package_stats.maintscripts;
-  fpf fmt "</table>"
+module Package = struct
+  let pp_parsing_status fmt package =
+    let package_stats = Stats.get_package_stats ~name:package in
+    fpf fmt "<h2>Parsing</h2><table><tr><th>Maintscript</th><th>Status</th><th>Message</th></tr>";
+    List.iter
+      (fun (maintscript, maintscript_stats) ->
+         match maintscript_stats with
+         | Some maintscript_stats ->
+           let (class_, status, message) =
+             match (maintscript_stats : Stats.maintscript).Stats.status with
+             | Stats.ParsingErrored msg -> ("errored", "Error in parsing", msg)
+             | Stats.ParsingRejected -> ("rejected", "Parsing rejected", "")
+             | Stats.ParsingAccepted status ->
+               match status with
+               | Stats.ConversionErrored msg -> ("errored", "Error in conversion", msg)
+               | Stats.ConversionRejected msg -> ("rejected", "Conversion rejected", msg)
+               | Stats.ConversionAccepted () -> ("accepted", "Accepted", "")
+           in
+           fpf fmt "<tr class=\"%s\"><td>%s</td><td>%s</td><td>%s</td></tr>"
+             class_ (Maintscript.name_to_string maintscript) status message
+         | None ->
+           fpf fmt "<tr class=\"empty\"><td>%s</td><td>Absent</td><td></td></tr>"
+             (Maintscript.name_to_string maintscript))
+      package_stats.maintscripts;
+    fpf fmt "</table>"
 
-let pp fmt () =
+  let pp_scenarii fmt package =
+    fpf fmt "<h2>Scenarii</h2>";
+    List.iter
+      (fun (name, _) ->
+         let name = Scenario.name_to_string name in
+         fpf fmt "<h3>%s</h3><img src=\"%s\"/>"
+           name
+           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "flowchart.dot.png"))
+      Scenarii.all
+end
+
+(* let pp fmt () =
   let () =
     let nb_all = ref 0 in
     let nb_accepted = ref 0 in
@@ -148,21 +160,21 @@ let pp fmt () =
       (hidden !nb_parsing_rejected)    !nb_parsing_rejected    (percentage !nb_parsing_rejected !nb_all)
       (hidden !nb_parsing_errored)     !nb_parsing_errored     (percentage !nb_parsing_errored !nb_all)
   in
-  ()
+  () *)
 
 (* ************************************************************************** *)
 (* Now that we have written prettys-printer, we generate an arborescence of
    HTML file with them. *)
 
-let with_magic_formatter ~path f =
+(* let with_magic_formatter ~path f =
   ignore (Sys.command ("mkdir -p " ^ (Filename.dirname path)));
   let out = open_out path in
   let fmt = Format.formatter_of_out_channel out in
   let a = try Ok (f fmt) with exn -> Error exn in
   fpf fmt "@?"; close_out out;
-  match a with Ok x -> x | Error e -> raise e
+  match a with Ok x -> x | Error e -> raise e *)
 
-let gaw_package package =
+(* let gaw_package package =
   let path = ExtFilename.concat_l [!Options.report; "package"; package; "index.html"] in
   with_magic_formatter ~path @@ fun fmt ->
   fpf fmt "%s%a%s" (header ~title:"CoLiS-Language Covering") pp_package package footer
@@ -183,6 +195,6 @@ let gaw () =
   let path = Filename.concat !Options.report "index.html" in
   with_magic_formatter ~path @@ fun fmt ->
   fpf fmt "%s%a%s" (header ~title:"CoLiS-Language Covering") pp () footer;
-  gaw_packages ()
+  gaw_packages () *)
 
-let generate_and_write = gaw
+let generate_and_write () = ()

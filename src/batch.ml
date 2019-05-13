@@ -16,23 +16,11 @@ let () =
   Constraints_common.Log.cpu_time_limit := Some (!Options.cpu_timeout);
   Colis.Options.external_sources := !Options.external_sources
 
-let find_packages () =
-  !Options.corpus
-  |> Sys.readdir
-  |> Array.to_list
-
 let pf = Format.printf
 
 let () =
-  let packages = find_packages () in
-  pf "Found %d packages.@." (List.length packages);
-  let parsed_packages = ExtList.map_filter Package.parse packages in
-  pf "Parsed %d packages successfully.@." (List.length parsed_packages);
-  List.iter
-    (fun package ->
-       let _scenario = Scenarii.(run ~package Install) in
-       pf "Package: %s@."
-         (Package.name package))
-    parsed_packages;
-  pf "Generating report.@.";
+  Engine.(
+    find_packages ()
+    |> List.iter handle_package
+  );
   HtmlReport.generate_and_write ()

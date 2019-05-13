@@ -1,8 +1,19 @@
-let package_path name =
-  ExtFilename.concat_l [!Options.report; "package"; name]
+let path file =
+  Filename.concat !Options.report file
 
-let scenario_path ~package ~scenario file =
-  ExtFilename.concat_l [package_path package; "scenario"; scenario; file]
+let or_id_if bool f =
+  if bool then
+    fun x -> x
+  else
+    f
+
+let package_path ?(relative=false) ~package file =
+  ExtFilename.concat_l ["package"; package; file]
+  |> (path |> or_id_if relative)
+
+let scenario_path ?(relative=false) ~package ~scenario file =
+  ExtFilename.concat_l ["scenario"; scenario; file]
+  |> (package_path ~relative ~package |> or_id_if relative)
 
 let rec ensure_existence path =
   let dir = Filename.dirname path in

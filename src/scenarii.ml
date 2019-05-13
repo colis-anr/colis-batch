@@ -35,6 +35,3 @@ let removal = (* FIXME: remove files *)
 let all =
   [ Install, install ;
     Removal, removal ]
-
-let run ~package name =
-  ScenarioEngine.run ~package ~name (List.assoc name all)
