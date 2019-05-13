@@ -16,20 +16,14 @@ let dummy_maintscript () = {
   status = ParsingErrored "not parsed yet" ;
 }
 
-type scenario = {
-  mutable outcomes : (ScenariiHelper.outcome * int) list ;
-}
-
 type package = {
   mutable status : unit parsing ;
   mutable maintscripts : (Maintscript.name * maintscript option) list ;
-  mutable scenarii : (ScenariiHelper.name * scenario) list ;
 }
 
 let dummy_package () = {
   status = ParsingErrored "not parsed yet" ;
   maintscripts = List.map (fun maintscript -> (maintscript, None)) Maintscript.all_names ;
-  scenarii = [] ;
 }
 
 let by_package : (string, package) Hashtbl.t =
