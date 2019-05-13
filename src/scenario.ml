@@ -1,4 +1,5 @@
 let fpf = Format.fprintf
+let spf = Format.sprintf
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
@@ -66,23 +67,29 @@ let rec pp pp_a fmt sc =
     | Action (action, _, _) -> pp_action fmt action
   in
   pp_title fmt sc.scenario;
+  fpf fmt "@\n@[%a@]" pp_a sc.data;
   match sc.scenario with
   | Status _ -> ()
   | Action (_, on_success, on_error) ->
-    fpf fmt "@\n|  @[%a@]@\nS-- @[%a@]@\n|@\nE-- @[%a@]"
-      pp_a sc.data
+    fpf fmt "@\n@\nS-- @[%a@]@\n@\nE-- @[%a@]"
       (pp pp_a) on_success
       (pp pp_a) on_error
 
 type colis_state = Colis.Symbolic.Semantics.state
 
 type ran =
-  { states : colis_state list ;
+  { states_before : colis_state list ;
+    states_after : colis_state list ;
     incomplete : colis_state list ;
     timeout : bool }
 
-let empty_run =
-  { states = [] ; incomplete = [] ; timeout = false }
+let pp_ran fmt ran =
+  fpf fmt "(states before: %d; after: %d%s%s)"
+    (List.length ran.states_before)
+    (List.length ran.states_after)
+    (let s = List.length ran.incomplete in
+     if s = 0 then "" else spf "; %d incomplete" s)
+    (if ran.timeout then "; timeout" else "")
 
 type name =
   | Installation
@@ -106,9 +113,6 @@ let installation = (* FIXME: unpack *)
         ~on_error:(status HalfInstalled)
     )
 
-let () =
-  Format.printf "%a@\n@." (pp (fun _fmt () -> ())) installation
-
 let all =
   [ Installation, installation ]
 
@@ -122,7 +126,7 @@ let run ~package scenario =
     match scenario.scenario with
     | Status status ->
       { scenario = Status status ;
-        data = { states ; incomplete = [] ; timeout = false } }
+        data = { states_before = states ; states_after = states ; incomplete = [] ; timeout = false } }
     | Action (action, on_success, on_error) ->
       match action with
       | RunScript (script, cmd_line_arguments) ->
@@ -134,7 +138,7 @@ let run ~package scenario =
             (([], [], []), true)
         in
         { scenario = Action (action, run success on_success, run error on_error) ;
-          data = { states ; incomplete ; timeout } }
+          data = { states_before = states ; states_after = success @ error @ incomplete ; incomplete ; timeout } } (* FIXME: include incompletes? *)
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let fs_spec = Colis.Symbolic.FilesystemSpec.empty in (* FIXME *)

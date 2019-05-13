@@ -21,11 +21,19 @@ let find_packages () =
   |> Sys.readdir
   |> Array.to_list
 
+let pf = Format.printf
+
 let () =
   let packages = find_packages () in
-  Format.printf "Found %d packages.@." (List.length packages);
+  pf "Found %d packages.@." (List.length packages);
   let parsed_packages = ExtList.map_filter Package.parse packages in
-  Format.printf "Parsed %d packages successfully.@." (List.length parsed_packages);
-  let _statuses = List.map Scenario.install parsed_packages in
-  Format.printf "Generating report.@.";
+  pf "Parsed %d packages successfully.@." (List.length parsed_packages);
+  pf "@\n%a@\n@." Scenario.(pp (fun _ _ -> ())) Scenario.installation;
+  List.iter
+    (fun package ->
+       pf "Package: %s@\n%a@\n@."
+         (Package.name package)
+         Scenario.(pp pp_ran) (Scenario.install package))
+    parsed_packages;
+  pf "Generating report.@.";
   HtmlReport.generate_and_write ()
