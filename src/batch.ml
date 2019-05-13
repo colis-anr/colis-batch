@@ -30,7 +30,7 @@ let () =
   pf "Parsed %d packages successfully.@." (List.length parsed_packages);
   List.iter
     (fun package ->
-       let _scenario = Scenario.(run ~package Install) in
+       let _scenario = Scenarii.(run ~package Install) in
        pf "Package: %s@."
          (Package.name package))
     parsed_packages;
