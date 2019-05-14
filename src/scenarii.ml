@@ -5,7 +5,7 @@ let install = (* FIXME: unpack *)
     ~action:(RunScript (Maintscript.Preinst, ["install"]))
     ~on_success:(
       action
-        ~action:(RunScript (Maintscript.Postinst, ["configure"]))
+        ~action:(RunScript (Maintscript.Postinst, ["configure"])) (* FIXME: version *)
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )
