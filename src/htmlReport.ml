@@ -37,6 +37,13 @@ let pp_header ~title fmt () =
 let pp_footer fmt () =
   fpf fmt "</body></html>"
 
+let with_formatter_to_report ?(title="CoLiS-Covering Report") path f =
+  ReportHelpers.with_formatter_to_file path @@ fun fmt ->
+  pp_header ~title fmt ();
+  let y = f fmt in
+  pp_footer fmt ();
+  y
+
 module Package = struct
   let pp_parsing_status fmt package =
     let package_stats = Stats.get_package_stats ~name:package in
@@ -78,7 +85,7 @@ module Package = struct
 end
 
 module Script = struct
-  let pp_content fmt package script =
+  let pp_content fmt ~package script =
     fpf fmt "<pre><code class=\"bash\">";
     let ichan = open_in (ExtFilename.concat_l [!Options.corpus; package; script]) in
     let buflen = 1024 in
@@ -93,6 +100,24 @@ module Script = struct
     copy_all ();
     close_in ichan;
     fpf fmt "</code></pre>"
+
+  let pp_status fmt msg =
+    fpf fmt "<p><strong>Status:</strong> %s</p>" msg
+
+  let pp_accepted fmt () =
+    pp_status fmt "Accepted"
+
+  let pp_conversion_rejected fmt msg =
+    pp_status fmt ("Conversion rejected with: " ^ msg)
+
+  let pp_conversion_errored fmt msg =
+    pp_status fmt ("Conversion errored with: " ^ msg)
+
+  let pp_parsing_rejected fmt () =
+    pp_status fmt "Parsing rejected"
+
+  let pp_parsing_errored fmt msg =
+    pp_status fmt ("Parsing errored with: " ^ msg)
 end
 
 (* let pp fmt () =

@@ -7,8 +7,7 @@ let find_packages () =
 
 let handle_package name =
   let report_path = ReportHelpers.package_path ~package:name "index.html" in
-  ReportHelpers.with_formatter_to_file report_path @@ fun fmt ->
-  HtmlReport.pp_header ~title:name fmt ();
+  HtmlReport.with_formatter_to_report report_path @@ fun fmt ->
   pf "Package: %s.@." name;
   let package = Package.parse name in
   HtmlReport.Package.pp_parsing_status fmt name;
@@ -26,5 +25,4 @@ let handle_package name =
         Scenarii.all;
       HtmlReport.Package.pp_scenarii fmt (Package.name package)
   );
-  pf "@.";
-  HtmlReport.pp_footer fmt ()
+  pf "@."
