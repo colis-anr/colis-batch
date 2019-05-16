@@ -1,4 +1,5 @@
 (executable
  (name batch)
  (public_name colis-batch)
- (libraries colis-language))
+ (libraries colis-language lwt.unix)
+ (preprocess (pps lwt_ppx)))
