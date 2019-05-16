@@ -1,5 +1,6 @@
 let spf = Format.sprintf
 
+let contents = ref "contents"
 let corpus = ref "corpus"
 let cpu_timeout = ref 5.
 let external_sources = ref "external_sources"
@@ -8,6 +9,7 @@ let workers = ref 2
 
 let speclist =
   Arg.(align [
+      "--contents",    Set_string contents,    spf "FILE Sets the path to the contents file (default: %s)" !contents;
       "--corpus",      Set_string corpus,      spf "DIR Sets the path to the corpus (default: %s)" !corpus;
       "--cpu-timeout", Set_float  cpu_timeout, spf "NB Sets the CPU timeout, in seconds (default: %.0f)" !cpu_timeout;
       "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" !external_sources;
@@ -26,6 +28,8 @@ let print_usage () =
   Arg.usage speclist usage
 
 let check_values () =
+  if not Sys.(file_exists !contents) then
+    raise (Arg.Bad (spf "Contents file (%s) must exist." !contents));
   if not Sys.(file_exists !corpus && is_directory !corpus) then
     raise (Arg.Bad (spf "Corpus directory (%s) must exist." !corpus));
   if not (!cpu_timeout > 0.) then

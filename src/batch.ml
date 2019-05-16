@@ -16,6 +16,8 @@ let () =
   Constraints_common.Log.cpu_time_limit := Some (!Options.cpu_timeout);
   Colis.Options.external_sources := !Options.external_sources
 
+let () = ContentsTable.load ()
+
 let pf = Format.printf
 
 let () =
