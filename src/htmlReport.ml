@@ -19,6 +19,7 @@ let pp_header ~title fmt () =
           .rejected { background: #aaf; }
           .errored  { background: #faa; }
           .empty    { background: #ddd; }
+          pre { max-width: 100%%; overflow: auto; }
         </style>
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/styles/github.min.css">
@@ -78,10 +79,27 @@ module Package = struct
     List.iter
       (fun (name, _) ->
          let name = Scenario.name_to_string name in
-         fpf fmt "<h3>%s</h3><img src=\"%s\"/>"
+         fpf fmt "<h3>%s</h3><img src=\"%s\"/><a href=\"%s\">Details</a>"
            name
-           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "flowchart.dot.png"))
+           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "flowchart.dot.png")
+           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "index.html"))
       Scenarii.all
+end
+
+module Scenario = struct
+  let pp_package fmt ~package scenario ran =
+    ignore package;
+    fpf fmt "<h1>%s</h1><img src=\"flowchart.dot.png\" />" scenario;
+    List.iter
+      (fun (status, states) ->
+         fpf fmt "<h2>%a</h2>" Scenario.Status.pp status;
+         List.iter
+           (fun state ->
+              fpf fmt "<pre>";
+              Colis.print_symbolic_state fmt state;
+              fpf fmt "</pre>")
+           states)
+      ran
 end
 
 module Script = struct

@@ -20,6 +20,27 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
       ~argument0:(Maintscript.name_to_string script)
       sym_states colis
 
+let create_report ~package ~name ran =
+  let categorize ran =
+    let rec categorize ran =
+      match ran.scenario with
+      | Status status ->
+        ran.data.states
+        |> List.map (fun sta -> (status, sta))
+      | Action (_, on_success, on_error) ->
+        categorize on_success
+        @ categorize on_error
+    in
+    categorize ran
+    |> List.sort compare
+    |> ExtList.group compare
+  in
+  let package = Package.name package in
+  let scenario = name_to_string name in
+  let path = ReportHelpers.scenario_path ~package ~scenario "index.html" in
+  HtmlReport.with_formatter_to_report path @@ fun fmt ->
+  HtmlReport.Scenario.pp_package fmt ~package scenario (categorize ran)
+
 let create_flowchart ~package ~name ran =
   let path =
     ReportHelpers.scenario_path
@@ -55,5 +76,6 @@ let run ~package ~name scenario =
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fs_spec in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
   let ran = run stas scenario in
+  create_report ~package ~name ran;
   create_flowchart ~package ~name ran;
   ran

@@ -10,6 +10,11 @@ module Package : sig
   val pp_scenarii : Format.formatter -> string -> unit
 end
 
+module Scenario : sig
+  val pp_package : Format.formatter -> package:string -> string ->
+    (Scenario.Status.t * Colis.Symbolic.Semantics.state list) list -> unit
+end
+
 module Script : sig
   val pp_content : Format.formatter -> package:string -> string -> unit
 
