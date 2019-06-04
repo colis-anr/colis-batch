@@ -7,10 +7,10 @@ let find_packages () =
 
 let handle_package name =
   let report_path = ["package"; name; "index.html"] in
-  HtmlReport.with_formatter_to_report report_path @@ fun fmt ->
+  Report.with_formatter_to_report report_path @@ fun fmt ->
   pf "Package: %s.@." name;
   let package = Package.parse name in
-  HtmlReport.Package.pp_parsing_status fmt name;
+  Report.Package.pp_parsing_status fmt name;
   (
     match package with
     | None ->
@@ -23,6 +23,6 @@ let handle_package name =
            let ran = ScenarioEngine.run ~package ~name scenario in
            ignore ran) (* FIXME *)
         Scenarii.all;
-      HtmlReport.Package.pp_scenarii fmt (Package.name package)
+      Report.Package.pp_scenarii fmt (Package.name package)
   );
   pf "@."

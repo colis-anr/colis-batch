@@ -25,4 +25,4 @@ let () =
     find_packages ()
     |> List.iter handle_package
   );
-  HtmlReport.generate_and_write ()
+  Report.generate_and_write ()

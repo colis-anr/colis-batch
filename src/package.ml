@@ -20,7 +20,7 @@ let parse_maintscripts ~package =
          if Sys.file_exists maintscript_path then
            (
              let report_path = ["package"; package; "script"; maintscript_str ^ ".html"] in
-             HtmlReport.with_formatter_to_report report_path @@ fun fmt ->
+             Report.with_formatter_to_report report_path @@ fun fmt ->
              let output =
                try
                  let shell = Morsmall.parse_file maintscript_path in
@@ -28,30 +28,30 @@ let parse_maintscripts ~package =
                    (* We try to convert with dummy arguments to see if we really can. *)
                    let colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
                    Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionAccepted ())));
-                   HtmlReport.Script.pp_accepted fmt colis;
+                   Report.Script.pp_accepted fmt colis;
                    Some (maintscript, Some shell)
                  with
                  | Colis.Errors.ConversionError msg ->
                    Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionRejected msg)));
-                   HtmlReport.Script.pp_conversion_rejected fmt msg;
+                   Report.Script.pp_conversion_rejected fmt msg;
                    None
                  | exn ->
                    let msg = Printexc.to_string exn in
                    Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionErrored msg)));
-                   HtmlReport.Script.pp_conversion_errored fmt msg;
+                   Report.Script.pp_conversion_errored fmt msg;
                    None
                with
                | Morsmall.SyntaxError _pos ->
                  Stats.(set_maintscript_status ~package ~maintscript (ParsingRejected));
-                 HtmlReport.Script.pp_parsing_rejected fmt ();
+                 Report.Script.pp_parsing_rejected fmt ();
                  None
                | exn ->
                  let msg = Printexc.to_string exn in
                  Stats.(set_maintscript_status ~package ~maintscript (ParsingErrored msg));
-                 HtmlReport.Script.pp_parsing_errored fmt msg;
+                 Report.Script.pp_parsing_errored fmt msg;
                  None
              in
-             HtmlReport.Script.pp_content fmt ~package maintscript_str;
+             Report.Script.pp_content fmt ~package maintscript_str;
              output
            )
          else

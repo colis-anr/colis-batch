@@ -40,22 +40,22 @@ let create_report ~package ~name ran =
   let package = Package.name package in
   let scenario = name_to_string name in
   let path = ["package"; package; "scenario"; scenario; "index.html"] in
-  (HtmlReport.with_formatter_to_report path @@ fun fmt ->
-   HtmlReport.Scenario.pp_package fmt ~package scenario ran);
+  (Report.with_formatter_to_report path @@ fun fmt ->
+   Report.Scenario.pp_package fmt ~package scenario ran);
   List.iter
     (fun (status, states) ->
        List.iteri
          (fun id state ->
             let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
-            HtmlReport.with_formatter_to_report path @@ fun fmt ->
-            HtmlReport.Scenario.pp_state fmt ~package ~status ~id state
+            Report.with_formatter_to_report path @@ fun fmt ->
+            Report.Scenario.pp_state fmt ~package ~status ~id state
          )
          states)
     ran
 
 let create_flowchart ~package ~name ran =
   let path = ["package"; Package.name package; "scenario"; name_to_string name; "flowchart.dot"] in
-  (HtmlReport.with_formatter_to_file path @@ fun fmt ->
+  (Report.with_formatter_to_file path @@ fun fmt ->
    pp_ran_as_dot ~name fmt ran);
   assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped (ExtFilename.concat_l (!Options.report :: path))))) (* FIXME: viz.js *)
 
