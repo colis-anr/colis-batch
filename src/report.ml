@@ -106,7 +106,8 @@ end
 module Scenario = struct
   let pp_package fmt ~package scenario ran =
     ignore package;
-    fpf fmt "<h1>%s</h1><img src=\"flowchart.dot.png\" />" scenario;
+    fpf fmt "<h1>%s</h1>" scenario;
+    fpf fmt "<img src=\"flowchart.dot.png\" />";
     let pp_status = Scenario.Status.pp in
     List.iter
       (fun (status, states) ->
@@ -123,8 +124,8 @@ module Scenario = struct
   let pp_state fmt ~package ~status ~id state =
     ignore package;
     let pp_status = Scenario.Status.pp in
-    fpf fmt "<h1 id=\"%a-%d\">%a %d</h1>"
-      pp_status status id pp_status status id;
+    fpf fmt "<h1>%a %d</h1>" pp_status status id;
+    fpf fmt "<img src=\"%d.dot.png\" />" id;
     fpf fmt "<pre>";
     Colis.print_symbolic_state fmt state;
     fpf fmt "</pre>"
