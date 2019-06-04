@@ -46,9 +46,13 @@ let create_report ~package ~name ran =
     (fun (status, states) ->
        List.iteri
          (fun id state ->
+            let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".dot"] in
+            (Report.with_formatter_to_file path @@ fun fmt ->
+             let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
+             Colis.Constraints.Clause.pp_sat_conj_as_dot ~name:(Format.asprintf "%a-%d" Scenario.Status.pp status id) fmt clause);
             let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
-            Report.with_formatter_to_report path @@ fun fmt ->
-            Report.Scenario.pp_state fmt ~package ~status ~id state
+            (Report.with_formatter_to_report path @@ fun fmt ->
+             Report.Scenario.pp_state fmt ~package ~status ~id state)
          )
          states)
     ran
