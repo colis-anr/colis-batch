@@ -36,7 +36,7 @@ let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
   if viz then
     fpf fmt {|
         <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/viz.js"></script>
-        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/lite.render.js"></script>
+        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/full.render.js"></script>
       |};
   fpf fmt {|
       </head>
