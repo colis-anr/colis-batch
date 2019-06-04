@@ -4,7 +4,8 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
   | None -> (states, [], []) (* Trivial success *)
   | Some shell ->
-    (* Assertion: it works because we have tried before. *)
+    (* Assertion: it works because we have converted before (with other cmd line
+       arguments). *)
     let colis = Colis.convert_shell_file ~cmd_line_arguments shell in
     let sym_states =
       List.map
@@ -35,22 +36,28 @@ let create_report ~package ~name ran =
     |> List.sort compare
     |> ExtList.group compare
   in
+  let ran = categorize ran in
   let package = Package.name package in
   let scenario = name_to_string name in
-  let path = ReportHelpers.scenario_path ~package ~scenario "index.html" in
-  HtmlReport.with_formatter_to_report path @@ fun fmt ->
-  HtmlReport.Scenario.pp_package fmt ~package scenario (categorize ran)
+  let path = ["package"; package; "scenario"; scenario; "index.html"] in
+  (HtmlReport.with_formatter_to_report path @@ fun fmt ->
+   HtmlReport.Scenario.pp_package fmt ~package scenario ran);
+  List.iter
+    (fun (status, states) ->
+       List.iteri
+         (fun id state ->
+            let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
+            HtmlReport.with_formatter_to_report path @@ fun fmt ->
+            HtmlReport.Scenario.pp_state fmt ~package ~status ~id state
+         )
+         states)
+    ran
 
 let create_flowchart ~package ~name ran =
-  let path =
-    ReportHelpers.scenario_path
-     ~package:(Package.name package)
-     ~scenario:(name_to_string name)
-     "flowchart.dot"
-  in
-  (ReportHelpers.with_formatter_to_file path @@ fun fmt ->
+  let path = ["package"; Package.name package; "scenario"; name_to_string name; "flowchart.dot"] in
+  (HtmlReport.with_formatter_to_file path @@ fun fmt ->
    pp_ran_as_dot ~name fmt ran);
-  assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped path)))
+  assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped (ExtFilename.concat_l (!Options.report :: path))))) (* FIXME: viz.js *)
 
 let run ~package ~name scenario =
   let rec run states (scenario : unit t) : ran t =

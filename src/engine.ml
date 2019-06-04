@@ -6,7 +6,7 @@ let find_packages () =
   |> Array.to_list
 
 let handle_package name =
-  let report_path = ReportHelpers.package_path ~package:name "index.html" in
+  let report_path = ["package"; name; "index.html"] in
   HtmlReport.with_formatter_to_report report_path @@ fun fmt ->
   pf "Package: %s.@." name;
   let package = Package.parse name in

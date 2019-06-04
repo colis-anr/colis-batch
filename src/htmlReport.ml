@@ -38,8 +38,25 @@ let pp_header ~title fmt () =
 let pp_footer fmt () =
   fpf fmt "</body></html>"
 
-let with_formatter_to_report ?(title="CoLiS-Covering Report") path f =
-  ReportHelpers.with_formatter_to_file path @@ fun fmt ->
+let rec ensure_existence path =
+  let dir = Filename.dirname path in
+  if dir <> path then ensure_existence dir;
+  if not (Sys.file_exists path) then
+    Unix.mkdir path 0o755
+
+let with_formatter_to_file ?(relative=false) path f =
+  let path = if relative then path else !Options.report :: path in
+  let path = ExtFilename.concat_l path in
+  ensure_existence (Filename.dirname path);
+  let ochan = open_out path in
+  let fmt = Format.formatter_of_out_channel ochan in
+  let y = f fmt in
+  Format.pp_print_flush fmt ();
+  close_out ochan;
+  y
+
+let with_formatter_to_report ?(title="CoLiS-Covering Report") ?relative path f =
+  with_formatter_to_file ?relative path @@ fun fmt ->
   pp_header ~title fmt ();
   let y = f fmt in
   pp_footer fmt ();
@@ -65,7 +82,7 @@ module Package = struct
            in
            fpf fmt "<tr class=\"%s\"><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>"
              class_
-             (ReportHelpers.scripts_path ~relative:true ~package ((Maintscript.name_to_string maintscript)^".html"))
+             (ExtFilename.concat_l ["script"; (Maintscript.name_to_string maintscript) ^ ".html"])
              (Maintscript.name_to_string maintscript)
              status message
          | None ->
@@ -74,15 +91,15 @@ module Package = struct
       package_stats.maintscripts;
     fpf fmt "</table>"
 
-  let pp_scenarii fmt package =
+  let pp_scenarii fmt _package =
     fpf fmt "<h2>Scenarii</h2>";
     List.iter
       (fun (name, _) ->
          let name = Scenario.name_to_string name in
          fpf fmt "<h3>%s</h3><img src=\"%s\"/><a href=\"%s\">Details</a>"
            name
-           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "flowchart.dot.png")
-           (ReportHelpers.scenario_path ~relative:true ~package ~scenario:name "index.html"))
+           (ExtFilename.concat_l ["scenario"; name; "flowchart.dot.png"])
+           (ExtFilename.concat_l ["scenario"; name; "index.html"]))
       Scenarii.all
 end
 
@@ -90,16 +107,27 @@ module Scenario = struct
   let pp_package fmt ~package scenario ran =
     ignore package;
     fpf fmt "<h1>%s</h1><img src=\"flowchart.dot.png\" />" scenario;
+    let pp_status = Scenario.Status.pp in
     List.iter
       (fun (status, states) ->
-         fpf fmt "<h2>%a</h2>" Scenario.Status.pp status;
-         List.iter
-           (fun state ->
-              fpf fmt "<pre>";
-              Colis.print_symbolic_state fmt state;
-              fpf fmt "</pre>")
+         fpf fmt "<h2>%a</h2>" pp_status status;
+         List.iteri
+           (fun id _ ->
+              fpf fmt "<a href=\"%s\">%d</a> "
+                (ExtFilename.concat_l [Scenario.Status.to_string status; (string_of_int id) ^ ".html"])
+                id)
            states)
-      ran
+      ran;
+    fpf fmt "</dl>"
+
+  let pp_state fmt ~package ~status ~id state =
+    ignore package;
+    let pp_status = Scenario.Status.pp in
+    fpf fmt "<h1 id=\"%a-%d\">%a %d</h1>"
+      pp_status status id pp_status status id;
+    fpf fmt "<pre>";
+    Colis.print_symbolic_state fmt state;
+    fpf fmt "</pre>"
 end
 
 module Script = struct

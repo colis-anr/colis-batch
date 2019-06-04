@@ -19,7 +19,7 @@ let parse_maintscripts ~package =
          let maintscript_path = Filename.(concat (concat !Options.corpus package) maintscript_str) in
          if Sys.file_exists maintscript_path then
            (
-             let report_path = ReportHelpers.scripts_path ~package (maintscript_str ^ ".html") in
+             let report_path = ["package"; package; "script"; maintscript_str ^ ".html"] in
              HtmlReport.with_formatter_to_report report_path @@ fun fmt ->
              let output =
                try

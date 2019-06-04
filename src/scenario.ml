@@ -10,14 +10,16 @@ module Status = struct
     | ConfigFiles
     | Unpacked
 
+  let to_string = function
+    | Installed -> "Installed"
+    | FailedConfig -> "Failed-Config"
+    | NotInstalled -> "Not-Installed"
+    | HalfInstalled -> "Half-Installed"
+    | ConfigFiles -> "Config-Files"
+    | Unpacked -> "Unpacked"
+
   let pp fmt status =
-    fpf fmt "%s" (match status with
-        | Installed -> "Installed"
-        | FailedConfig -> "Failed-Config"
-        | NotInstalled -> "Not-Installed"
-        | HalfInstalled -> "Half-Installed"
-        | ConfigFiles -> "Config-Files"
-        | Unpacked -> "Unpacked")
+    fpf fmt "%s" (to_string status)
 end
 
 type action =
@@ -100,8 +102,6 @@ let pp_ran_as_dot ~name fmt sc =
        fpf fmt "|timeout")
   in
   let pp_edge_label fmt sc =
-    match List.length sc.data.states with
-    | 0 -> ()
-    | l -> fpf fmt "\\n%d" l
+    fpf fmt "\\n%d" (List.length sc.data.states)
   in
   pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc

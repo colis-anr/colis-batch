@@ -1,9 +1,14 @@
 (* val pp_header : title:string -> Format.formatter -> unit -> unit
 val pp_footer : Format.formatter -> unit -> unit *)
 
+val with_formatter_to_file :
+  ?relative:bool -> string list ->
+  (Format.formatter -> 'a) -> 'a
+
 val with_formatter_to_report :
   ?title:string ->
-  string -> (Format.formatter -> 'a) -> 'a
+  ?relative:bool -> string list ->
+  (Format.formatter -> 'a) -> 'a
 
 module Package : sig
   val pp_parsing_status : Format.formatter -> string -> unit
@@ -11,8 +16,20 @@ module Package : sig
 end
 
 module Scenario : sig
-  val pp_package : Format.formatter -> package:string -> string ->
-    (Scenario.Status.t * Colis.Symbolic.Semantics.state list) list -> unit
+  val pp_package :
+    Format.formatter ->
+    package:string ->
+    string ->
+    (Scenario.Status.t * Colis.Symbolic.Semantics.state list) list ->
+    unit
+
+  val pp_state :
+    Format.formatter ->
+    package:string ->
+    status:Scenario.Status.t ->
+    id:int ->
+    Colis.Symbolic.Semantics.state ->
+    unit
 end
 
 module Script : sig
