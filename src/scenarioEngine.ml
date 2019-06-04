@@ -40,7 +40,7 @@ let create_report ~package ~name ran =
   let package = Package.name package in
   let scenario = name_to_string name in
   let path = ["package"; package; "scenario"; scenario; "index.html"] in
-  (Report.with_formatter_to_report path @@ fun fmt ->
+  (Report.with_formatter_to_report ~viz:true path @@ fun fmt ->
    Report.Scenario.pp_package fmt ~package scenario ran);
   List.iter
     (fun (status, states) ->
@@ -50,9 +50,8 @@ let create_report ~package ~name ran =
             (Report.with_formatter_to_file path @@ fun fmt ->
              let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
              Colis.Constraints.Clause.pp_sat_conj_as_dot ~name:(Format.asprintf "%a-%d" Scenario.Status.pp status id) fmt clause);
-            assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped (ExtFilename.concat_l (!Options.report :: path))))); (* FIXME: viz.js *)
             let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
-            (Report.with_formatter_to_report path @@ fun fmt ->
+            (Report.with_formatter_to_report ~viz:true path @@ fun fmt ->
              Report.Scenario.pp_state fmt ~package ~status ~id state)
          )
          states)
@@ -60,9 +59,8 @@ let create_report ~package ~name ran =
 
 let create_flowchart ~package ~name ran =
   let path = ["package"; Package.name package; "scenario"; name_to_string name; "flowchart.dot"] in
-  (Report.with_formatter_to_file path @@ fun fmt ->
-   pp_ran_as_dot ~name fmt ran);
-  assert (0 = Sys.command ("dot -O -Tpng " ^ (String.escaped (ExtFilename.concat_l (!Options.report :: path))))) (* FIXME: viz.js *)
+  Report.with_formatter_to_file path @@ fun fmt ->
+  pp_ran_as_dot ~name fmt ran
 
 let run ~package ~name scenario =
   let rec run states (scenario : unit t) : ran t =

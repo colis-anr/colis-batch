@@ -7,7 +7,7 @@ let find_packages () =
 
 let handle_package name =
   let report_path = ["package"; name; "index.html"] in
-  Report.with_formatter_to_report report_path @@ fun fmt ->
+  Report.with_formatter_to_report ~viz:true report_path @@ fun fmt ->
   pf "Package: %s.@." name;
   let package = Package.parse name in
   Report.Package.pp_parsing_status fmt name;

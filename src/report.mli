@@ -7,6 +7,8 @@ val with_formatter_to_file :
 
 val with_formatter_to_report :
   ?title:string ->
+  ?highlight:bool ->
+  ?viz:bool ->
   ?relative:bool -> string list ->
   (Format.formatter -> 'a) -> 'a
 

@@ -4,7 +4,7 @@ let fpf = Format.fprintf
 (* let percentage a b =
   100. *. (foi a) /. (foi b)
  *)
-let pp_header ~title fmt () =
+let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
   fpf fmt {|
     <!DOCTYPE html>
     <html>
@@ -21,7 +21,10 @@ let pp_header ~title fmt () =
           .empty    { background: #ddd; }
           pre { max-width: 100%%; overflow: auto; }
         </style>
-
+    |}
+    title;
+  if highlight then
+    fpf fmt {|
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/styles/github.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"></script>
@@ -29,11 +32,18 @@ let pp_header ~title fmt () =
           hljs.initHighlightingOnLoad();
           hljs.initLineNumbersOnLoad();
         </script>
+      |};
+  if viz then
+    fpf fmt {|
+        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/viz.js"></script>
+        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/lite.render.js"></script>
+      |};
+  fpf fmt {|
       </head>
       <body>
         <h1>%s</h1>
     |}
-    title title
+    title
 
 let pp_footer fmt () =
   fpf fmt "</body></html>"
@@ -55,12 +65,39 @@ let with_formatter_to_file ?(relative=false) path f =
   close_out ochan;
   y
 
-let with_formatter_to_report ?(title="CoLiS-Covering Report") ?relative path f =
+let with_formatter_to_report ?(title="CoLiS-Covering Report") ?highlight ?viz ?relative path f =
   with_formatter_to_file ?relative path @@ fun fmt ->
-  pp_header ~title fmt ();
+  pp_header ~title ?highlight ?viz fmt ();
   let y = f fmt in
   pp_footer fmt ();
   y
+
+let pp_viz fmt ?(id="jaipasdidee") file =
+  fpf fmt {|
+    <div id="viz-%s"></div>
+    <script>
+      var client_%s = new XMLHttpRequest();
+      var viz_%s = new Viz();
+
+      client_%s.open('GET', '%s');
+      client_%s.onreadystatechange = function() {
+        if (client_%s.readyState === 4){
+          viz_%s.renderSVGElement(client_%s.responseText)
+            .then(function(element) {
+              document.getElementById('viz-%s').appendChild(element);
+            })
+            .catch(error => {
+              viz_%s = new Viz();
+              console.error(error);
+            });
+        }
+      }
+      client_%s.send();
+    </script>
+  |}
+    id id id id
+    file
+    id id id id id id id
 
 module Package = struct
   let pp_parsing_status fmt package =
@@ -96,9 +133,10 @@ module Package = struct
     List.iter
       (fun (name, _) ->
          let name = Scenario.name_to_string name in
-         fpf fmt "<h3>%s</h3><img src=\"%s\"/><a href=\"%s\">Details</a>"
-           name
-           (ExtFilename.concat_l ["scenario"; name; "flowchart.dot.png"])
+         fpf fmt "<h3>%s</h3>" name;
+         pp_viz fmt ~id:name
+           (ExtFilename.concat_l ["scenario"; name; "flowchart.dot"]);
+         fpf fmt "<a href=\"%s\">Details</a>"
            (ExtFilename.concat_l ["scenario"; name; "index.html"]))
       Scenarii.all
 end
@@ -107,7 +145,7 @@ module Scenario = struct
   let pp_package fmt ~package scenario ran =
     ignore package;
     fpf fmt "<h1>%s</h1>" scenario;
-    fpf fmt "<img src=\"flowchart.dot.png\" />";
+    pp_viz fmt "flowchart.dot";
     let pp_status = Scenario.Status.pp in
     List.iter
       (fun (status, states) ->
@@ -125,7 +163,7 @@ module Scenario = struct
     ignore package;
     let pp_status = Scenario.Status.pp in
     fpf fmt "<h1>%a %d</h1>" pp_status status id;
-    fpf fmt "<img src=\"%d.dot.png\" />" id;
+    pp_viz fmt (string_of_int id ^ ".dot");
     fpf fmt "<pre>";
     Colis.print_symbolic_state fmt state;
     fpf fmt "</pre>"

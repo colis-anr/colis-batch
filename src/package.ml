@@ -20,7 +20,7 @@ let parse_maintscripts ~package =
          if Sys.file_exists maintscript_path then
            (
              let report_path = ["package"; package; "script"; maintscript_str ^ ".html"] in
-             Report.with_formatter_to_report report_path @@ fun fmt ->
+             Report.with_formatter_to_report ~highlight:true report_path @@ fun fmt ->
              let output =
                try
                  let shell = Morsmall.parse_file maintscript_path in
