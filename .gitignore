@@ -13,5 +13,8 @@
 ## Project specific
 /bin
 /doc
-/report
+
 /corpus
+/contents
+/external_sources
+/report
