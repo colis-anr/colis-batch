@@ -18,7 +18,7 @@ end
 module Script : sig
   val pp_content : Format.formatter -> package:string -> string -> unit
 
-  val pp_accepted : Format.formatter -> unit -> unit
+  val pp_accepted : Format.formatter -> Colis.colis -> unit
   val pp_conversion_rejected : Format.formatter -> string -> unit
   val pp_conversion_errored : Format.formatter -> string -> unit
   val pp_parsing_rejected : Format.formatter -> unit -> unit

@@ -104,7 +104,7 @@ end
 
 module Script = struct
   let pp_content fmt ~package script =
-    fpf fmt "<pre><code class=\"bash\">";
+    fpf fmt "<hr/><h2>Original Shell script</h2><pre><code class=\"bash\">";
     let ichan = open_in (ExtFilename.concat_l [!Options.corpus; package; script]) in
     let buflen = 1024 in
     let buf = Bytes.create buflen in
@@ -122,8 +122,15 @@ module Script = struct
   let pp_status fmt msg =
     fpf fmt "<p><strong>Status:</strong> %s</p>" msg
 
-  let pp_accepted fmt () =
-    pp_status fmt "Accepted"
+  let pp_accepted fmt colis =
+    pp_status fmt "Accepted";
+    fpf fmt "<h2>Colis script</h2><pre><code>";
+    let oldmargin = Format.pp_get_margin fmt () in
+    Format.pp_set_margin fmt max_int;
+    Format.set_margin max_int;
+    fpf fmt "@[<h>%a@]@?" Colis.pp_print_colis colis;
+    Format.pp_set_margin fmt oldmargin;
+    fpf fmt "</code></pre>"
 
   let pp_conversion_rejected fmt msg =
     pp_status fmt ("Conversion rejected with: " ^ msg)

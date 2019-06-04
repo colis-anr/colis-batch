@@ -26,9 +26,9 @@ let parse_maintscripts ~package =
                  let shell = Morsmall.parse_file maintscript_path in
                  try
                    (* We try to convert with dummy arguments to see if we really can. *)
-                   let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
+                   let colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
                    Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionAccepted ())));
-                   HtmlReport.Script.pp_accepted fmt ();
+                   HtmlReport.Script.pp_accepted fmt colis;
                    Some (maintscript, Some shell)
                  with
                  | Colis.Errors.ConversionError msg ->
