@@ -1,3 +1,5 @@
+include List
+
 let rec update_assoc key value = function
   | [] -> failwith "ExtList.update_assoc"
   | (key', _) :: rest when key = key' ->

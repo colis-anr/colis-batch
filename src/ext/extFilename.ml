@@ -1,3 +1,5 @@
+include Filename
+
 let rec concat_l = function
   | [] -> raise (Invalid_argument "ExtFilename.concat_l")
   | [e] -> e

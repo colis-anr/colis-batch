@@ -1,4 +1,4 @@
-open ExtPervasives
+open Colis_ext
 
 type name = string
 
@@ -16,7 +16,7 @@ let parse_maintscripts ~package =
     |> List.map
       (fun maintscript ->
          let maintscript_str = Maintscript.name_to_string maintscript in
-         let maintscript_path = Filename.(concat (concat !Options.corpus package) maintscript_str) in
+         let maintscript_path = Filename.(concat (concat !Colis_config.corpus package) maintscript_str) in
          if Sys.file_exists maintscript_path then
            (
              let report_path = ["package"; package; "script"; maintscript_str ^ ".html"] in
@@ -64,7 +64,7 @@ let parse_maintscripts ~package =
     Some (List.map unwrap maintscripts)
 
 let parse name =
-  assert (Sys.file_exists (Filename.concat !Options.corpus name));
+  assert (Sys.file_exists (Filename.concat !Colis_config.corpus name));
   match parse_maintscripts ~package:name with
   | None ->
     Stats.(set_package_status ~package:name ParsingRejected);

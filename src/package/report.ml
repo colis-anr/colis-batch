@@ -1,3 +1,5 @@
+open Colis_ext
+
 let fpf = Format.fprintf
 (* let foi = float_of_int *)
 
@@ -55,8 +57,8 @@ let rec ensure_existence path =
     Unix.mkdir path 0o755
 
 let with_formatter_to_file ?(relative=false) path f =
-  let path = if relative then path else !Options.report :: path in
-  let path = ExtFilename.concat_l path in
+  let path = if relative then path else !Colis_config.report :: path in
+  let path = Filename.concat_l path in
   ensure_existence (Filename.dirname path);
   let ochan = open_out path in
   let fmt = Format.formatter_of_out_channel ochan in
@@ -119,7 +121,7 @@ module Package = struct
            in
            fpf fmt "<tr class=\"%s\"><td><a href=\"%s\">%s</a></td><td>%s</td><td>%s</td></tr>"
              class_
-             (ExtFilename.concat_l ["script"; (Maintscript.name_to_string maintscript) ^ ".html"])
+             (Filename.concat_l ["script"; (Maintscript.name_to_string maintscript) ^ ".html"])
              (Maintscript.name_to_string maintscript)
              status message
          | None ->
@@ -135,9 +137,9 @@ module Package = struct
          let name = Scenario.name_to_string name in
          fpf fmt "<h3>%s</h3>" name;
          pp_viz fmt ~id:name
-           (ExtFilename.concat_l ["scenario"; name; "flowchart.dot"]);
+           (Filename.concat_l ["scenario"; name; "flowchart.dot"]);
          fpf fmt "<a href=\"%s\">Details</a>"
-           (ExtFilename.concat_l ["scenario"; name; "index.html"]))
+           (Filename.concat_l ["scenario"; name; "index.html"]))
       Scenarii.all
 end
 
@@ -153,7 +155,7 @@ module Scenario = struct
          List.iteri
            (fun id _ ->
               fpf fmt "<a href=\"%s\">%d</a> "
-                (ExtFilename.concat_l [Scenario.Status.to_string status; (string_of_int id) ^ ".html"])
+                (Filename.concat_l [Scenario.Status.to_string status; (string_of_int id) ^ ".html"])
                 id)
            states)
       ran;
@@ -172,7 +174,7 @@ end
 module Script = struct
   let pp_content fmt ~package script =
     fpf fmt "<hr/><h2>Original Shell script</h2><pre><code class=\"bash\">";
-    let ichan = open_in (ExtFilename.concat_l [!Options.corpus; package; script]) in
+    let ichan = open_in (Filename.concat_l [!Colis_config.corpus; package; script]) in
     let buflen = 1024 in
     let buf = Bytes.create buflen in
     let rec copy_all () =

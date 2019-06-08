@@ -1,3 +1,5 @@
+open Colis_ext
+
 type 'a parsing =
   | ParsingErrored of string
   | ParsingRejected
@@ -42,7 +44,7 @@ let get_maintscript_stats ~package ~name =
   match List.assoc name package_stats.maintscripts with
   | None ->
     let maintscript_stats = dummy_maintscript () in
-    package_stats.maintscripts <- ExtList.update_assoc name (Some maintscript_stats) package_stats.maintscripts;
+    package_stats.maintscripts <- List.update_assoc name (Some maintscript_stats) package_stats.maintscripts;
     maintscript_stats
   | Some maintscript_stats ->
     maintscript_stats

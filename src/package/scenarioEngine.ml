@@ -1,3 +1,4 @@
+open Colis_ext
 open Scenario
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
@@ -14,7 +15,7 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
            ~arguments:cmd_line_arguments)
         states
     in
-    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. !Options.cpu_timeout);
+    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. !Colis_config.cpu_timeout);
     Colis.Symbolic.interp_program
       ~loop_limit:200
       ~stack_size:200
@@ -34,7 +35,7 @@ let create_report ~package ~name ran =
     in
     categorize ran
     |> List.sort compare
-    |> ExtList.group compare
+    |> List.group compare
   in
   let ran = categorize ran in
   let package = Package.name package in

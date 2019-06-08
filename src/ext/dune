@@ -1,0 +1,3 @@
+(library
+ (name colis_ext)
+ (public_name colis-batch.ext))

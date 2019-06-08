@@ -4,6 +4,7 @@ let contents = ref "contents"
 let corpus = ref "corpus"
 let cpu_timeout = ref 5.
 let external_sources = ref "external_sources"
+let package = ref None
 let report = ref "report"
 let workers = ref 2
 
@@ -16,18 +17,25 @@ let speclist =
       "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" !report;
       "--workers",     Set_int    workers,     spf "NB Sets the number of workers (default: %d)" !workers;
     ])
-let usage = spf "%s [OPTIONS]" Sys.argv.(0)
+let usage ~one_package =
+  spf "%s [OPTIONS]%s" Sys.argv.(0) (if one_package then " PACKAGE" else "")
 
-let parse_command_line () =
+let parse_command_line ~one_package =
   Arg.parse
     speclist
-    (fun arg -> raise (Arg.Bad (spf "Unexpected argument: %s" arg)))
-    usage
+    (fun arg ->
+       if one_package then
+         match !package with
+         | Some _ -> raise (Arg.Bad "There can only be one package.")
+         | None -> package := Some arg
+       else
+         raise (Arg.Bad "No package expected."))
+    (usage ~one_package)
 
-let print_usage () =
-  Arg.usage speclist usage
+let print_usage ~one_package =
+  Arg.usage speclist (usage ~one_package)
 
-let check_values () =
+let check_values ~one_package =
   if not Sys.(file_exists !contents) then
     raise (Arg.Bad (spf "Contents file (%s) must exist." !contents));
   if not Sys.(file_exists !corpus && is_directory !corpus) then
@@ -39,7 +47,11 @@ let check_values () =
   if Sys.file_exists !report then
     raise (Arg.Bad (spf "Report directory (%s) must not exist." !report));
   if not (!workers > 0) then
-    raise (Arg.Bad (spf "Workers number (%d) must be positive." !workers))
+    raise (Arg.Bad (spf "Workers number (%d) must be positive." !workers));
+  if one_package && !package = None then
+    raise (Arg.Bad (spf "Package expected."));
+  if not one_package && !package <> None then
+    raise (Arg.Bad (spf "No package expected."))
 
 let symbolic_config =
   Colis.{
