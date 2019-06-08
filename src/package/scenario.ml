@@ -24,7 +24,7 @@ end
 
 type action =
   (* FIXME: unpack *)
-  | RunScript of Maintscript.name * string list
+  | RunScript of Maintscript.Key.t * string list
 
 type 'a scenario =
   | Status of Status.t
@@ -57,7 +57,7 @@ let name_to_string = function
 
 let pp_action fmt = function
   | RunScript (script, args) ->
-    fpf fmt "%s" (Maintscript.name_to_string script);
+    fpf fmt "%s" (Maintscript.Key.to_string script);
     List.iter (fpf fmt " %s") args
 
 let pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc =

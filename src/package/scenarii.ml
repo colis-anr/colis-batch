@@ -2,32 +2,32 @@ open Scenario
 
 let install = (* FIXME: unpack *)
   action
-    ~action:(RunScript (Maintscript.Preinst, ["install"]))
+    ~action:(RunScript (Maintscript.Key.Preinst, ["install"]))
     ~on_success:(
       action
-        ~action:(RunScript (Maintscript.Postinst, ["configure"])) (* FIXME: version *)
+        ~action:(RunScript (Maintscript.Key.Postinst, ["configure"])) (* FIXME: version *)
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )
     ~on_error:(
       action
-        ~action:(RunScript (Maintscript.Postrm, ["abort-install"]))
+        ~action:(RunScript (Maintscript.Key.Postrm, ["abort-install"]))
         ~on_success:(status NotInstalled)
         ~on_error:(status HalfInstalled)
     )
 
 let removal = (* FIXME: remove files *)
   action
-    ~action:(RunScript (Maintscript.Prerm, ["remove"]))
+    ~action:(RunScript (Maintscript.Key.Prerm, ["remove"]))
     ~on_success:(
       action
-        ~action:(RunScript (Maintscript.Postrm, ["remove"]))
+        ~action:(RunScript (Maintscript.Key.Postrm, ["remove"]))
         ~on_success:(status ConfigFiles)
         ~on_error:(status HalfInstalled)
     )
     ~on_error:(
       action
-        ~action:(RunScript (Maintscript.Postinst, ["abort-remove"]))
+        ~action:(RunScript (Maintscript.Key.Postinst, ["abort-remove"]))
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )

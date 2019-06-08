@@ -1,11 +1,11 @@
 type name = string
+type version = string
 
 type t
 
 val name : t -> name
-val maintscripts : t -> (Maintscript.name * Morsmall.AST.program option) list
-val maintscript : t -> Maintscript.name -> Morsmall.AST.program option
+val version : t -> version
 
-val parse : string -> t option
-(** Parses the package. If everything goes fine, returns the package. Otherwise,
-    returns [None] and informs the [Stats] modules. *)
+val maintscript : t -> Maintscript.Key.t -> Maintscript.t
+
+val parse : string -> t

@@ -20,7 +20,7 @@ let dummy_maintscript () = {
 
 type package = {
   mutable status : unit parsing ;
-  mutable maintscripts : (Maintscript.name * maintscript option) list ;
+  mutable maintscripts : (Maintscript.Key.t * maintscript option) list ;
 }
 
 let dummy_package () = {

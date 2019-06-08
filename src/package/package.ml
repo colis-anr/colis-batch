@@ -1,74 +1,24 @@
 open Colis_ext
 
 type name = string
+type version = string
 
 type t =
   { name : name ;
-    maintscripts : (Maintscript.name * Morsmall.AST.program option) list }
+    version : version ;
+    maintscripts : (Maintscript.Key.t * Maintscript.t) list }
 
 let name pkg = pkg.name
-let maintscripts pkg = pkg.maintscripts
+let version pkg = pkg.version
 let maintscript pkg name = List.assoc name pkg.maintscripts
 
-let parse_maintscripts ~package =
+let parse path =
+  let (name, version) = String.split_2_on_char '_' (Filename.basename path) in
   let maintscripts =
-    Maintscript.all_names
+    Maintscript.Key.all
     |> List.map
-      (fun maintscript ->
-         let maintscript_str = Maintscript.name_to_string maintscript in
-         let maintscript_path = Filename.(concat (concat !Colis_config.corpus package) maintscript_str) in
-         if Sys.file_exists maintscript_path then
-           (
-             let report_path = ["package"; package; "script"; maintscript_str ^ ".html"] in
-             Report.with_formatter_to_report ~highlight:true report_path @@ fun fmt ->
-             let output =
-               try
-                 let shell = Morsmall.parse_file maintscript_path in
-                 try
-                   (* We try to convert with dummy arguments to see if we really can. *)
-                   let colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
-                   Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionAccepted ())));
-                   Report.Script.pp_accepted fmt colis;
-                   Some (maintscript, Some shell)
-                 with
-                 | Colis.Errors.ConversionError msg ->
-                   Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionRejected msg)));
-                   Report.Script.pp_conversion_rejected fmt msg;
-                   None
-                 | exn ->
-                   let msg = Printexc.to_string exn in
-                   Stats.(set_maintscript_status ~package ~maintscript (ParsingAccepted (ConversionErrored msg)));
-                   Report.Script.pp_conversion_errored fmt msg;
-                   None
-               with
-               | Morsmall.SyntaxError _pos ->
-                 Stats.(set_maintscript_status ~package ~maintscript (ParsingRejected));
-                 Report.Script.pp_parsing_rejected fmt ();
-                 None
-               | exn ->
-                 let msg = Printexc.to_string exn in
-                 Stats.(set_maintscript_status ~package ~maintscript (ParsingErrored msg));
-                 Report.Script.pp_parsing_errored fmt msg;
-                 None
-             in
-             Report.Script.pp_content fmt ~package maintscript_str;
-             output
-           )
-         else
-           (* No need to "set" the absence, as this is the default. *)
-           Some (maintscript, None))
+      (fun maintscript_name ->
+         let maintscript_path = Filename.concat path (Maintscript.Key.to_string maintscript_name) in
+         (maintscript_name, Maintscript.parse maintscript_path))
   in
-  if List.exists ((=) None) maintscripts then
-    None
-  else
-    Some (List.map unwrap maintscripts)
-
-let parse name =
-  assert (Sys.file_exists (Filename.concat !Colis_config.corpus name));
-  match parse_maintscripts ~package:name with
-  | None ->
-    Stats.(set_package_status ~package:name ParsingRejected);
-    None
-  | Some maintscripts ->
-    Stats.(set_package_status ~package:name (ParsingAccepted ()));
-    Some { name ; maintscripts }
+  { name; version; maintscripts }

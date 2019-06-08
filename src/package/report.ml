@@ -102,7 +102,8 @@ let pp_viz fmt ?(id="jaipasdidee") file =
     id id id id id id id
 
 module Package = struct
-  let pp_parsing_status fmt package =
+  let pp_parsing_status _ _ = () (* FIXME *)
+  (* let pp_parsing_status fmt package =
     let package_stats = Stats.get_package_stats ~name:package in
     fpf fmt "<h2>Parsing</h2><table><tr><th>Maintscript</th><th>Status</th><th>Message</th></tr>";
     List.iter
@@ -128,7 +129,7 @@ module Package = struct
            fpf fmt "<tr class=\"empty\"><td>%s</td><td>Absent</td><td></td></tr>"
              (Maintscript.name_to_string maintscript))
       package_stats.maintscripts;
-    fpf fmt "</table>"
+    fpf fmt "</table>" *)
 
   let pp_scenarii fmt _package =
     fpf fmt "<h2>Scenarii</h2>";

@@ -2,26 +2,12 @@ open Colis_ext
 open Scenario
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
-  match Package.maintscript package script with
-  | None -> (states, [], []) (* Trivial success *)
-  | Some shell ->
-    (* Assertion: it works because we have converted before (with other cmd line
-       arguments). *)
-    let colis = Colis.convert_shell_file ~cmd_line_arguments shell in
-    let sym_states =
-      List.map
-        (Colis.Symbolic.to_symbolic_state
-           ~vars:[] (* FIXME *)
-           ~arguments:cmd_line_arguments)
-        states
-    in
-    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. !Colis_config.cpu_timeout);
-    Colis.Symbolic.interp_program
-      ~loop_limit:200
-      ~stack_size:200
-      ~argument0:(Maintscript.name_to_string script)
-      sym_states colis
-
+  Maintscript.interp
+    ~cmd_line_arguments
+    ~states
+    ~key:script
+    (Package.maintscript package script)
+  
 let create_report ~package ~name ran =
   let categorize ran =
     let rec categorize ran =

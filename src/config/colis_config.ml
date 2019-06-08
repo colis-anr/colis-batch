@@ -8,21 +8,33 @@ let package = ref None
 let report = ref "report"
 let workers = ref 2
 
-let speclist =
-  Arg.(align [
+let speclist ~one_package =
+  let speclist =
+    Arg.[
       "--contents",    Set_string contents,    spf "FILE Sets the path to the contents file (default: %s)" !contents;
-      "--corpus",      Set_string corpus,      spf "DIR Sets the path to the corpus (default: %s)" !corpus;
       "--cpu-timeout", Set_float  cpu_timeout, spf "NB Sets the CPU timeout, in seconds (default: %.0f)" !cpu_timeout;
       "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" !external_sources;
       "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" !report;
       "--workers",     Set_int    workers,     spf "NB Sets the number of workers (default: %d)" !workers;
-    ])
+    ]
+  in
+  let speclist =
+    if one_package then
+      speclist @
+      ["--corpus",      Set_string corpus,      spf "DIR Sets the path to the corpus (default: %s)" !corpus;]
+    else
+      speclist
+  in
+  speclist
+  |> List.sort compare
+  |> Arg.align
+
 let usage ~one_package =
   spf "%s [OPTIONS]%s" Sys.argv.(0) (if one_package then " PACKAGE" else "")
 
 let parse_command_line ~one_package =
   Arg.parse
-    speclist
+    (speclist ~one_package)
     (fun arg ->
        if one_package then
          match !package with
@@ -33,13 +45,11 @@ let parse_command_line ~one_package =
     (usage ~one_package)
 
 let print_usage ~one_package =
-  Arg.usage speclist (usage ~one_package)
+  Arg.usage (speclist ~one_package) (usage ~one_package)
 
 let check_values ~one_package =
   if not Sys.(file_exists !contents) then
     raise (Arg.Bad (spf "Contents file (%s) must exist." !contents));
-  if not Sys.(file_exists !corpus && is_directory !corpus) then
-    raise (Arg.Bad (spf "Corpus directory (%s) must exist." !corpus));
   if not (!cpu_timeout > 0.) then
     raise (Arg.Bad (spf "CPU timeout (%.0f) must be positive." !cpu_timeout));
   if not Sys.(file_exists !external_sources && is_directory !external_sources) then
@@ -48,10 +58,18 @@ let check_values ~one_package =
     raise (Arg.Bad (spf "Report directory (%s) must not exist." !report));
   if not (!workers > 0) then
     raise (Arg.Bad (spf "Workers number (%d) must be positive." !workers));
-  if one_package && !package = None then
-    raise (Arg.Bad (spf "Package expected."));
-  if not one_package && !package <> None then
-    raise (Arg.Bad (spf "No package expected."))
+  if one_package then
+    (
+      if !package = None then
+        raise (Arg.Bad (spf "Package expected."))
+    )
+  else
+    (
+      if not Sys.(file_exists !corpus && is_directory !corpus) then
+        raise (Arg.Bad (spf "Corpus directory (%s) must exist." !corpus));
+      if !package <> None then
+        raise (Arg.Bad (spf "No package expected."))
+    )
 
 let symbolic_config =
   Colis.{
