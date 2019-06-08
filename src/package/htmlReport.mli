@@ -12,8 +12,10 @@ val with_formatter_to_report :
   ?relative:bool -> string list ->
   (Format.formatter -> 'a) -> 'a
 
+val pp_package_parsing_status : Format.formatter -> Package.t -> unit
+
 module Package : sig
-  val pp_parsing_status : Format.formatter -> string -> unit
+  (* val pp_parsing_status : Format.formatter -> string -> unit *)
   val pp_scenarii : Format.formatter -> string -> unit
 end
 

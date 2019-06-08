@@ -24,4 +24,4 @@ let () =
 
 let () =
   Engine.handle_package (unwrap !Colis_config.package);
-  Report.generate_and_write ()
+  HtmlReport.generate_and_write ()

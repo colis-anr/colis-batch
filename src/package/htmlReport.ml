@@ -1,11 +1,5 @@
 open Colis_ext
 
-let fpf = Format.fprintf
-(* let foi = float_of_int *)
-
-(* let percentage a b =
-  100. *. (foi a) /. (foi b)
- *)
 let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
   fpf fmt {|
     <!DOCTYPE html>
@@ -67,7 +61,12 @@ let with_formatter_to_file ?(relative=false) path f =
   close_out ochan;
   y
 
-let with_formatter_to_report ?(title="CoLiS-Covering Report") ?highlight ?viz ?relative path f =
+let with_formatter_to_report ?title ?highlight ?viz ?relative path f =
+  let title =
+    match title with
+    | None -> "CoLiS"
+    | Some title -> "CoLiS – " ^ title
+  in
   with_formatter_to_file ?relative path @@ fun fmt ->
   pp_header ~title ?highlight ?viz fmt ();
   let y = f fmt in
@@ -101,8 +100,32 @@ let pp_viz fmt ?(id="jaipasdidee") file =
     file
     id id id id id id id
 
+let pp_package_parsing_status fmt package =
+  fpf fmt "<dl>";
+  fpf fmt "<dt>Name</dt><dd>%s</dd>" (Package.name package);
+  fpf fmt "<dt>Version</dt><dd>%s</dd>" (Package.version package);
+  fpf fmt "<dt>Maintainer scripts</dt><dd><dl>";
+  Package.iter_maintscripts
+    (fun (key, maintscript) ->
+       let (html_class, status, message) =
+         if Maintscript.is_present maintscript then
+           (match Maintscript.has_error maintscript with
+            | None -> ("accepted", "OK", "")
+            | Some e ->
+              match e with
+              | ParsingErrored msg -> ("errored", "Error in parsing", msg)
+              | ParsingRejected -> ("rejected", "Rejected by parsing", "")
+              | ConversionErrored msg -> ("errored", "Error in conversion", msg)
+              | ConversionRejected msg -> ("rejected", "Rejected by conversion", msg))
+         else
+           ("empty", "absent", "")
+       in
+       fpf fmt "<dt>%s</dt><dd class=\"%s\">%s %s</dd>"
+         (Maintscript.Key.to_string key) html_class status message)
+    package;
+   fpf fmt "</dl></dl>"
+
 module Package = struct
-  let pp_parsing_status _ _ = () (* FIXME *)
   (* let pp_parsing_status fmt package =
     let package_stats = Stats.get_package_stats ~name:package in
     fpf fmt "<h2>Parsing</h2><table><tr><th>Maintscript</th><th>Status</th><th>Message</th></tr>";

@@ -7,7 +7,7 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
     ~states
     ~key:script
     (Package.maintscript package script)
-  
+
 let create_report ~package ~name ran =
   let categorize ran =
     let rec categorize ran =
@@ -27,26 +27,26 @@ let create_report ~package ~name ran =
   let package = Package.name package in
   let scenario = name_to_string name in
   let path = ["package"; package; "scenario"; scenario; "index.html"] in
-  (Report.with_formatter_to_report ~viz:true path @@ fun fmt ->
-   Report.Scenario.pp_package fmt ~package scenario ran);
+  (HtmlReport.with_formatter_to_report ~viz:true path @@ fun fmt ->
+   HtmlReport.Scenario.pp_package fmt ~package scenario ran);
   List.iter
     (fun (status, states) ->
        List.iteri
          (fun id state ->
             let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".dot"] in
-            (Report.with_formatter_to_file path @@ fun fmt ->
+            (HtmlReport.with_formatter_to_file path @@ fun fmt ->
              let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
              Colis.Constraints.Clause.pp_sat_conj_as_dot ~name:(Format.asprintf "%a-%d" Scenario.Status.pp status id) fmt clause);
             let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
-            (Report.with_formatter_to_report ~viz:true path @@ fun fmt ->
-             Report.Scenario.pp_state fmt ~package ~status ~id state)
+            (HtmlReport.with_formatter_to_report ~viz:true path @@ fun fmt ->
+             HtmlReport.Scenario.pp_state fmt ~package ~status ~id state)
          )
          states)
     ran
 
 let create_flowchart ~package ~name ran =
   let path = ["package"; Package.name package; "scenario"; name_to_string name; "flowchart.dot"] in
-  Report.with_formatter_to_file path @@ fun fmt ->
+  HtmlReport.with_formatter_to_file path @@ fun fmt ->
   pp_ran_as_dot ~name fmt ran
 
 let run ~package ~name scenario =

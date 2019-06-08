@@ -3,3 +3,4 @@ let unwrap = function
   | Some x -> x
 
 let pf = Format.printf
+let fpf = Format.fprintf
