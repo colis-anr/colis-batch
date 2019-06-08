@@ -28,6 +28,12 @@ type error =
   | ConversionErrored of string
   | ConversionRejected of string
 
+let error_to_string = function
+  | ParsingErrored msg -> "parsing errored: " ^ msg
+  | ParsingRejected -> "parsing rejected"
+  | ConversionErrored msg -> "conversion errored: " ^ msg
+  | ConversionRejected msg -> "conversion rejected: " ^ msg
+
 type t = (Morsmall.AST.program option, error) result
 
 let parse path =
@@ -50,7 +56,11 @@ let parse path =
   else
     Ok None
 
-let error = function
+let is_present = function
+  | Ok (Some _) -> true
+  | _ -> false
+
+let has_error = function
   | Ok _ -> None
   | Error e -> Some e
 

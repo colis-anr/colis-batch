@@ -1,12 +1,23 @@
 open Colis_ext
 
-let handle_package name =
-  let report_path = ["package"; name; "index.html"] in (* FIXME: enlever le préfixe *)
-  Report.with_formatter_to_report ~viz:true report_path @@ fun fmt ->
-  pf "Package: %s.@." name;
-  let package = Package.parse name in
-  pf "Parsed (there may be errors in scripts).@.";
-  Report.Package.pp_parsing_status fmt name;
+let handle_package path =
+  pf "Package path: %s.@." path;
+
+  let package = Package.parse path in
+  pf "Parsed:@\n- name: %s@\n- version: %s@\n- scripts:@."
+    (Package.name package) (Package.version package);
+  Package.iter_maintscripts
+    (fun (key, maintscript) ->
+       pf "  - %s: %s@."
+         (Maintscript.Key.to_string key)
+         (if Maintscript.is_present maintscript then
+            (match Maintscript.has_error maintscript with
+             | None -> "OK"
+             | Some e -> Maintscript.error_to_string e)
+          else
+            "absent"))
+    package;
+
   Scenarii.all
   |> List.iter
     (fun (name, scenario) ->

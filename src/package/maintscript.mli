@@ -23,7 +23,10 @@ type error =
   | ConversionErrored of string
   | ConversionRejected of string
 
-val error : t -> error option
+val is_present : t -> bool
+val has_error : t -> error option
+
+val error_to_string : error -> string
 
 val interp :
   cmd_line_arguments:string list ->

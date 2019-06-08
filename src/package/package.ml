@@ -11,8 +11,11 @@ type t =
 let name pkg = pkg.name
 let version pkg = pkg.version
 let maintscript pkg name = List.assoc name pkg.maintscripts
+let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let parse path =
+  if not (Sys.file_exists path && Sys.is_directory path) then
+    failwith "Package.parse: no such directory";
   let (name, version) = String.split_2_on_char '_' (Filename.basename path) in
   let maintscripts =
     Maintscript.Key.all
