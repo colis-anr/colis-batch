@@ -94,7 +94,7 @@ let pp_scenario fmt ran =
 
 let generate_and_write ~prefix package scenarii =
   (
-    Report.with_formatter_to_html_report
+    Colis_common.Report.with_formatter_to_html_report
       ~title:"Package Report"
       ~viz:true
       [prefix; "index.html"]
@@ -106,7 +106,7 @@ let generate_and_write ~prefix package scenarii =
     (fun (key, maintscript) ->
        if Maintscript.is_present maintscript then
          (
-           Report.with_formatter_to_html_report
+           Colis_common.Report.with_formatter_to_html_report
              ~title:("Package Report – Script " ^ Maintscript.Key.to_string key)
              ~highlight:true
              [prefix; "script"; Maintscript.Key.to_string key ^ ".html"]
@@ -155,7 +155,7 @@ let generate_and_write ~prefix package scenarii =
   List.iter
     (fun (name, scenario) ->
        (
-         Report.with_formatter_to_html_report
+         Colis_common.Report.with_formatter_to_html_report
            ~title:(spf "Package Report – Scenario %s" (Scenario.name_to_string name))
            ~viz:true
            [prefix; "scenario"; Scenario.name_to_string name; "index.html"]
@@ -163,7 +163,7 @@ let generate_and_write ~prefix package scenarii =
          pp_scenario fmt scenario
        );
        (
-         Report.with_formatter_to_file
+         Colis_common.Report.with_formatter_to_file
            [prefix; "scenario"; Scenario.name_to_string name; "flowchart.dot"]
          @@ fun fmt ->
          Scenario.pp_ran_as_dot ~name fmt scenario
@@ -178,7 +178,7 @@ let generate_and_write ~prefix package scenarii =
                      (
                        let id = string_of_int id in
                        (
-                         Report.with_formatter_to_file
+                         Colis_common.Report.with_formatter_to_file
                            [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".dot"]
                          @@ fun fmt ->
                          let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
@@ -187,7 +187,7 @@ let generate_and_write ~prefix package scenarii =
                            fmt clause
                        );
                        (
-                         Report.with_formatter_to_html_report
+                         Colis_common.Report.with_formatter_to_html_report
                            ~title:(spf "Package Report – Scenario %s – %s #%s" (Scenario.name_to_string name) status id)
                            ~viz:true
                            [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".html"]

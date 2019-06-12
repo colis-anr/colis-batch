@@ -2,5 +2,5 @@
  (name colis_package_bin)
  (public_name colis-package)
  (libraries
-  colis-batch.config
+  colis-batch.common
   colis-batch.package))

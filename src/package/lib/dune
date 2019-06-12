@@ -3,4 +3,5 @@
  (public_name colis-batch.package)
  (libraries
   colis-batch.ext
+  colis-batch.common
   colis-language))
