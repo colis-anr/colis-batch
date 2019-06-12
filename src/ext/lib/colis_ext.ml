@@ -8,3 +8,4 @@ module String = ExtString
 (* New modules *)
 
 module Result = ExtResult
+module MultiProcess = ExtMultiProcess
