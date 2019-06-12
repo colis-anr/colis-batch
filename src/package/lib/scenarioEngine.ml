@@ -44,7 +44,7 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
          states)
     ran *)
 
-let run ~package scenario =
+let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : unit t) : ran t =
     match scenario.scenario with
     | Status status ->
@@ -55,7 +55,7 @@ let run ~package scenario =
       | RunScript (script, cmd_line_arguments) ->
         let ((success, error, incomplete), timeout) =
           try
-            (run_script ~cmd_line_arguments ~states ~package ~script, false)
+            (run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script, false)
           with
             Constraints_common.Log.CPU_time_limit_exceeded ->
             (([], [], []), true)

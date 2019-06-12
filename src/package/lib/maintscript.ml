@@ -70,7 +70,7 @@ let colis = function
   | _ ->
     raise (Invalid_argument "Maintscript.colis")
 
-let interp ~cmd_line_arguments ~states ~key = function
+let interp ~cpu_timeout ~cmd_line_arguments ~states ~key = function
   | Ok None -> (states, [], [])
   | Ok (Some shell) ->
     (* Assertion: it works because we have converted before (with other cmd line
@@ -83,7 +83,7 @@ let interp ~cmd_line_arguments ~states ~key = function
            ~arguments:cmd_line_arguments)
         states
     in
-    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. !Colis_config.cpu_timeout);
+    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. cpu_timeout);
     Colis.Symbolic.interp_program
       ~loop_limit:200
       ~stack_size:200

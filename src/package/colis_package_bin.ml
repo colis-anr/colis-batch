@@ -20,16 +20,18 @@ let () =
   Constraints_common.Log.cpu_time_limit := Some (!Colis_config.cpu_timeout);
   Colis.Options.external_sources := !Colis_config.external_sources
 
+(* FIXME: contents table *)
 (* let () = ContentsTable.load () *)
 
 let () =
   let path = unwrap !Colis_config.package in
-  let package = Package.parse path in
+  let package = Colis_package.parse_package path in
   let scenarii =
-    Scenarii.all
-    |> List.map
+    Colis_package.map_all_scenarii
       (fun (name, scenario) ->
-         let ran = ScenarioEngine.run ~package scenario in
+         let ran = Colis_package.run_scenario
+             ~cpu_timeout:!Colis_config.cpu_timeout
+             ~package scenario in
          (name, ran))
   in
-  HtmlReport.generate_and_write ~prefix:!Colis_config.report package scenarii
+  Colis_package.generate_and_write_html_report ~prefix:!Colis_config.report package scenarii
