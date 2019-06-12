@@ -1,5 +1,4 @@
-let fpf = Format.fprintf
-let spf = Format.sprintf
+open Colis_ext
 
 module Status = struct
   type t =
@@ -46,6 +45,16 @@ type ran =
   { states : colis_state list ;
     incomplete : colis_state list ;
     timeout : bool }
+
+let states s =
+  let rec states s = (* FIXME: regroup by status; otherwise, reports will be broken *)
+    match s.scenario with
+    | Status st -> List.map (fun state -> (st, state)) s.data.states
+    | Action (_, s1, s2) -> states s1 @ states s2
+  in
+  states s
+  |> List.sort compare
+  |> List.group compare
 
 type name =
   | Install

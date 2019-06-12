@@ -4,10 +4,12 @@ type name = string
 type version = string
 
 type t =
-  { name : name ;
+  { path : string ;
+    name : name ;
     version : version ;
     maintscripts : (Maintscript.Key.t * Maintscript.t) list }
 
+let path pkg = pkg.path
 let name pkg = pkg.name
 let version pkg = pkg.version
 let maintscript pkg name = List.assoc name pkg.maintscripts
@@ -24,4 +26,4 @@ let parse path =
          let maintscript_path = Filename.concat path (Maintscript.Key.to_string maintscript_name) in
          (maintscript_name, Maintscript.parse maintscript_path))
   in
-  { name; version; maintscripts }
+  { path; name; version; maintscripts }

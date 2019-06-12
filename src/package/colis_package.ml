@@ -23,5 +23,13 @@ let () =
 (* let () = ContentsTable.load () *)
 
 let () =
-  Engine.handle_package (unwrap !Colis_config.package);
-  HtmlReport.generate_and_write ()
+  let path = unwrap !Colis_config.package in
+  let package = Package.parse path in
+  let scenarii =
+    Scenarii.all
+    |> List.map
+      (fun (name, scenario) ->
+         let ran = ScenarioEngine.run ~package scenario in
+         (name, ran))
+  in
+  HtmlReport.generate_and_write ~prefix:!Colis_config.report package scenarii

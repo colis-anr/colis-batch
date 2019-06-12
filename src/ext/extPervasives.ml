@@ -4,3 +4,4 @@ let unwrap = function
 
 let pf = Format.printf
 let fpf = Format.fprintf
+let spf = Format.sprintf

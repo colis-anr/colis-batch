@@ -3,6 +3,7 @@ type version = string
 
 type t
 
+val path : t -> string
 val name : t -> name
 val version : t -> version
 

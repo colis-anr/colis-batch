@@ -28,6 +28,8 @@ val has_error : t -> error option
 
 val error_to_string : error -> string
 
+val colis : t -> Colis.colis
+
 val interp :
   cmd_line_arguments:string list ->
   states:Colis.Symbolic.Semantics.state list ->

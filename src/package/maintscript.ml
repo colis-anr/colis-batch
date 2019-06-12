@@ -64,6 +64,12 @@ let has_error = function
   | Ok _ -> None
   | Error e -> Some e
 
+let colis = function
+  | Ok (Some shell) ->
+    Colis.convert_shell_file ~cmd_line_arguments:["DUM"; "MY"] shell
+  | _ ->
+    raise (Invalid_argument "Maintscript.colis")
+
 let interp ~cmd_line_arguments ~states ~key = function
   | Ok None -> (states, [], [])
   | Ok (Some shell) ->
