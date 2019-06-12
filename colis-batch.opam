@@ -17,4 +17,6 @@ maintainer: "Nicolas Jeannerod <nicolas.jeannerod@irif.fr>"
 depends: [
   "colis-language"
   "dune"            {build}
+  "lwt"
+  "lwt_ppx"
 ]
