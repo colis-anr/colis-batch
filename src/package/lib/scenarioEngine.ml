@@ -8,42 +8,6 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
     ~key:script
     (Package.maintscript package script)
 
-(* let create_report ~package ~name ran =
-  let categorize ran =
-    let rec categorize ran =
-      match ran.scenario with
-      | Status status ->
-        ran.data.states
-        |> List.map (fun sta -> (status, sta))
-      | Action (_, on_success, on_error) ->
-        categorize on_success
-        @ categorize on_error
-    in
-    categorize ran
-    |> List.sort compare
-    |> List.group compare
-  in
-  let ran = categorize ran in
-  let package = Package.name package in
-  let scenario = name_to_string name in
-  let path = ["package"; package; "scenario"; scenario; "index.html"] in
-  (Report.with_formatter_to_html_report ~viz:true path @@ fun fmt ->
-   HtmlReport.Scenario.pp_package fmt ~package scenario ran);
-  List.iter
-    (fun (status, states) ->
-       List.iteri
-         (fun id state ->
-            let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".dot"] in
-            (Report.with_formatter_to_file path @@ fun fmt ->
-             let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
-             Colis.Constraints.Clause.pp_sat_conj_as_dot ~name:(Format.asprintf "%a-%d" Scenario.Status.pp status id) fmt clause);
-            let path = ["package"; package; "scenario"; scenario; Scenario.Status.to_string status; (string_of_int id) ^ ".html"] in
-            (Report.with_formatter_to_html_report ~viz:true path @@ fun fmt ->
-             HtmlReport.Scenario.pp_state fmt ~package ~status ~id state)
-         )
-         states)
-    ran *)
-
 let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : unit t) : ran t =
     match scenario.scenario with

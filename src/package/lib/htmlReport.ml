@@ -1,5 +1,7 @@
 open Colis_ext
 
+let nb_states_to_report = 100 (* FIXME: option *)
+
 let pp_viz fmt ?(id="jaipasdidee") file =
   fpf fmt {|
     <div id="viz-%s"></div>
@@ -48,22 +50,25 @@ let pp_parsing_status fmt package =
            ("script/" ^ Maintscript.Key.to_string key ^ ".html")
            (Maintscript.Key.to_string key) html_class status message
        else
-       fpf fmt "<dt>%s</dt><dd class=\"empty\">absent</dd>"
-         (Maintscript.Key.to_string key))
+         fpf fmt "<dt>%s</dt><dd class=\"empty\">absent</dd>"
+           (Maintscript.Key.to_string key))
     package;
   fpf fmt "</dl></dl>"
 
-let pp_scenarii_summaries fmt () =
+let pp_scenarii_summaries fmt scenarii =
   fpf fmt "<h2>Scenarii</h2>";
-  List.iter
-    (fun (name, _) ->
-       let name = Scenario.name_to_string name in
-       fpf fmt "<h3>%s</h3>" name;
-       pp_viz fmt ~id:name
-         (Filename.concat_l ["scenario"; name; "flowchart.dot"]);
-       fpf fmt "<a href=\"%s\">Details</a>"
-         (Filename.concat_l ["scenario"; name; "index.html"]))
-    Scenarii.all
+  if List.length scenarii > 0 then
+    List.iter
+      (fun (name, _) ->
+         let name = Scenario.name_to_string name in
+         fpf fmt "<div><h3>%s</h3>" name;
+         pp_viz fmt ~id:name
+           (Filename.concat_l ["scenario"; name; "flowchart.dot"]);
+         fpf fmt "<a href=\"%s\">Details</a></div>"
+           (Filename.concat_l ["scenario"; name; "index.html"]))
+      scenarii
+  else
+    fpf fmt "<div><p>No scenario could be run.</p></div>"
 
 let pp_scenario fmt ran =
   pp_viz fmt "flowchart.dot";
@@ -73,10 +78,16 @@ let pp_scenario fmt ran =
        fpf fmt "<h2>%s</h2>" status;
        List.iteri
          (fun id _ ->
-            let id = string_of_int id in
-            fpf fmt "<a href=\"%s\">%s</a> "
-              (Filename.concat_l [status; id ^ ".html"])
-              id)
+            if id < nb_states_to_report then
+              (
+                let id = string_of_int id in
+                fpf fmt "<a href=\"%s\">%s</a> "
+                  (Filename.concat_l [status; id ^ ".html"])
+                  id
+              )
+            else if id = nb_states_to_report then
+              fpf fmt "... and %d more." (List.length states - nb_states_to_report)
+         )
          states)
     (Scenario.states ran);
   fpf fmt "</dl>"
@@ -89,7 +100,7 @@ let generate_and_write ~prefix package scenarii =
       [prefix; "index.html"]
     @@ fun fmt ->
     pp_parsing_status fmt package;
-    pp_scenarii_summaries fmt ()
+    pp_scenarii_summaries fmt scenarii
   );
   Package.iter_maintscripts
     (fun (key, maintscript) ->
@@ -163,27 +174,30 @@ let generate_and_write ~prefix package scenarii =
               let status = Scenario.Status.to_string status in
               List.iteri
                 (fun id state ->
-                   let id = string_of_int id in
-                   (
-                     Report.with_formatter_to_file
-                       [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".dot"]
-                     @@ fun fmt ->
-                     let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
-                     Colis.Constraints.Clause.pp_sat_conj_as_dot
-                       ~name:(Format.asprintf "%s-%s" status id)
-                       fmt clause
-                   );
-                   (
-                     Report.with_formatter_to_html_report
-                       ~title:(spf "Package Report – Scenario %s – %s #%s" (Scenario.name_to_string name) status id)
-                       ~viz:true
-                       [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".html"]
-                     @@ fun fmt ->
-                     pp_viz fmt (id ^ ".dot");
-                     fpf fmt "<pre>";
-                     Colis.print_symbolic_state fmt state;
-                     fpf fmt "</pre>"
-                   )
+                   if id < nb_states_to_report then
+                     (
+                       let id = string_of_int id in
+                       (
+                         Report.with_formatter_to_file
+                           [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".dot"]
+                         @@ fun fmt ->
+                         let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
+                         Colis.Constraints.Clause.pp_sat_conj_as_dot
+                           ~name:(Format.asprintf "%s-%s" status id)
+                           fmt clause
+                       );
+                       (
+                         Report.with_formatter_to_html_report
+                           ~title:(spf "Package Report – Scenario %s – %s #%s" (Scenario.name_to_string name) status id)
+                           ~viz:true
+                           [prefix; "scenario"; Scenario.name_to_string name; status; id ^ ".html"]
+                         @@ fun fmt ->
+                         pp_viz fmt (id ^ ".dot");
+                         fpf fmt "<pre>";
+                         Colis.print_symbolic_state fmt state;
+                         fpf fmt "</pre>"
+                       )
+                     )
                 )
                 states)
            (Scenario.states scenario)

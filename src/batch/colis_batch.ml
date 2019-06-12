@@ -25,32 +25,32 @@ let () =
   ContentsTable.load ();
   epf "done!@."
 
+let handle_package path =
+  epf "Handling package at %s.@." path;
+  let package = Colis_package.parse_package path in
+  let scenarii =
+    Colis_package.map_all_scenarii
+      (fun (name, scenario) ->
+         try
+           let ran = Colis_package.run_scenario
+               ~cpu_timeout:!Colis_config.cpu_timeout
+               ~package scenario in
+           Some (name, ran)
+         with
+           Invalid_argument _ -> None)
+    |> List.map_filter Fun.id
+  in
+  Colis_package.generate_and_write_html_report
+    ~prefix:(Filename.concat_l [!Colis_config.report; "package"; Colis_package.Package.name package])
+    package scenarii;
+  (package, scenarii)
+
 let () =
-  !Colis_config.corpus |> Sys.readdir |> Array.to_list
-  |> MultiProcess.map_p
-    ~workers:!Colis_config.workers
-    (fun path ->
-       epf "Handling package at %s.@." path;
-       let path = Filename.concat !Colis_config.corpus path in
-       let package = Colis_package.parse_package path in
-       Colis_package.Package.iter_maintscripts
-         (fun (_key, maintscript) ->
-            if not (Colis_package.Maintscript.is_present maintscript)
-            || Colis_package.Maintscript.has_error maintscript <> None then
-              assert false)
-         package;
-       let scenarii =
-         Colis_package.map_all_scenarii
-           (fun (name, scenario) ->
-              let ran = Colis_package.run_scenario
-                  ~cpu_timeout:!Colis_config.cpu_timeout
-                  ~package scenario in
-              (name, ran))
-       in
-       Colis_package.generate_and_write_html_report
-         ~prefix:(Filename.concat_l [!Colis_config.report; "package"; Colis_package.Package.name package])
-         package scenarii)
-  |> Lwt_main.run
-  |> List.iter
-    (fun package ->
-       pf "- %s@." (Colis_package.Package.name package))
+  let paths = !Colis_config.corpus |> Sys.readdir |> Array.to_list |> List.map (Filename.concat !Colis_config.corpus) in
+  let packages =
+    MultiProcess.map_p ~workers:!Colis_config.workers handle_package paths
+    |> Lwt_main.run
+  in
+  List.iter
+    (fun (package, _) -> pf "- %s@." (Colis_package.Package.name package))
+    packages

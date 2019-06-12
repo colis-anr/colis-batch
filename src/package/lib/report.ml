@@ -44,11 +44,12 @@ let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
 let pp_footer fmt () =
   fpf fmt "</body></html>"
 
-let rec ensure_existence path =
-  let dir = Filename.dirname path in
+let (* rec *) ensure_existence path =
+  assert (0 = Sys.command (spf "mkdir -p %S" path))
+  (* let dir = Filename.dirname path in
   if dir <> path then ensure_existence dir;
   if not (Sys.file_exists path) then
-    Unix.mkdir path 0o755
+    Unix.mkdir path 0o755 *)
 
 let with_formatter_to_file path f =
   let path = Filename.concat_l path in

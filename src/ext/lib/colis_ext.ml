@@ -9,3 +9,4 @@ module String = ExtString
 
 module Result = ExtResult
 module MultiProcess = ExtMultiProcess
+module Fun = ExtFun

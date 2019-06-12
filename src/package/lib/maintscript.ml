@@ -57,8 +57,8 @@ let parse path =
     Ok None
 
 let is_present = function
-  | Ok (Some _) -> true
-  | _ -> false
+  | Ok None -> false
+  | _ -> true
 
 let has_error = function
   | Ok _ -> None
