@@ -1,5 +1,6 @@
 module Package = Package
 module Scenario = Scenario
+module Scenarii = Scenarii
 module Maintscript = Maintscript
 
 type package = Package.t

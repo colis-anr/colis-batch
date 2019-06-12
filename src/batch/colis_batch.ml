@@ -47,9 +47,16 @@ let handle_package path =
   (package, scenarii)
 
 let () =
-  !Config.corpus
-  |> Sys.readdir |> Array.to_list
-  |> List.map (Filename.concat !Config.corpus)
-  |> MultiProcess.map_p ~workers:!Config.workers handle_package
-  |> Lwt_main.run
-  |> HtmlReport.generate_and_write ~prefix:!Config.report
+  let start = Unix.gettimeofday () in
+  let packages =
+    !Config.corpus
+    |> Sys.readdir |> Array.to_list
+    |> List.map (Filename.concat !Config.corpus)
+    |> MultiProcess.map_p ~workers:!Config.workers handle_package
+    |> Lwt_main.run
+  in
+  let end_ = Unix.gettimeofday () in
+  HtmlReport.generate_and_write
+    ~prefix:!Config.report
+    ~time:(end_ -. start)
+    packages
