@@ -1,0 +1,10 @@
+(executable
+ (name colis_batch)
+ (public_name colis-batch)
+ (libraries
+  colis-batch.ext
+  colis-batch.config
+  colis-batch.package
+  colis-language
+  lwt.unix)
+ (preprocess (pps lwt_ppx)))

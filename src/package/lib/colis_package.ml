@@ -1,3 +1,6 @@
+module Package = Package
+module Maintscript = Maintscript
+
 type package = Package.t
 
 let parse_package = Package.parse

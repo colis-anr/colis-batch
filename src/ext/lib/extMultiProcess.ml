@@ -4,7 +4,7 @@ let forkee inputs_ichan outputs_ochan f =
     try
       while true do
         let input = input_value inputs_ichan in
-        let output = f input in
+        let output = try Ok (f input) with exn -> Error exn in
         output_value outputs_ochan output;
         flush outputs_ochan;
       done
@@ -23,14 +23,15 @@ let forker inputs_ochan outputs_ichan q a =
           let%lwt () = Lwt_io.flush inputs_ochan in
           let%lwt output = Lwt_io.read_value outputs_ichan in
           assert (a.(output_index) = None);
-          a.(output_index) <- Some output;
-          Lwt.return ()
+          match output with
+          | Ok output ->
+            a.(output_index) <- Some output;
+            Lwt.return ()
+          | Error exn ->
+            Lwt.fail exn
         done
       with
-      | Queue.Empty ->
-        Lwt.return ()
-      | _exn ->
-        exit 1
+      | Queue.Empty -> Lwt.return ()
     )
   in
   Lwt.return ()
