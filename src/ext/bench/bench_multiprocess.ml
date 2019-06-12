@@ -23,7 +23,7 @@ let sleep_time = 0.001
 let f i = i + 1
 
 let () =
-  epf "List.map (fun i -> Unix.sleepf 0.001; i + 1)@.@.";
+  epf "List.map (fun i -> Unix.sleepf %f; i + 1)@.@." sleep_time;
   epf "             ||-----------------------------------------------------------------------------------------||@.";
   epf "             ||                                        Workers                                          ||@.";
   epf "||-----------||---------|---------|---------|---------|---------|---------|---------|---------|---------||@.";
@@ -40,7 +40,7 @@ let () =
     (* let output = list_map_tail_rec (fun i -> f i) list in *)
     let end_ = Unix.gettimeofday () in
     assert (output = expected);
-    let time_s = string_of_float (end_ -. start) in
+    let time_s = Format.sprintf "%f" (end_ -. start) in
     let time_s = if String.length time_s > 7 then String.sub time_s 0 7 else time_s in
     epf " %7s |@?" time_s;
 

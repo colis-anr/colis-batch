@@ -1,3 +1,4 @@
+
 let forkee inputs_ichan outputs_ochan f =
   (
     try
@@ -12,17 +13,17 @@ let forkee inputs_ichan outputs_ochan f =
   );
   exit 0
 
-let forker inputs_ochan outputs_ichan q =
+let forker inputs_ochan outputs_ichan q a =
   let%lwt () =
     (
       try%lwt
         while%lwt true do
-          let (input, output_holder) = Queue.take q in
+          let (input, output_index) = Queue.take q in
           let%lwt () = Lwt_io.write_value inputs_ochan input in
           let%lwt () = Lwt_io.flush inputs_ochan in
           let%lwt output = Lwt_io.read_value outputs_ichan in
-          assert (!output_holder = None);
-          output_holder := Some output;
+          assert (a.(output_index) = None);
+          a.(output_index) <- Some output;
           Lwt.return ()
         done
       with
@@ -35,7 +36,7 @@ let forker inputs_ochan outputs_ichan q =
   Lwt.return ()
 
 let map_p ~workers f l =
-  let rec create_workers q acc wid =
+  let rec create_workers q a acc wid =
     if wid >= workers then
       acc
     else
@@ -55,7 +56,7 @@ let map_p ~workers f l =
           [forkee inputs_ichan outputs_ochan f] (* Not acc! *)
         | pid ->
           let worker =
-            let%lwt () = forker inputs_ochan outputs_ichan q in
+            let%lwt () = forker inputs_ochan outputs_ichan q a in
             Unix.kill pid Sys.sigkill;
             let%lwt () =
               try%lwt
@@ -70,17 +71,19 @@ let map_p ~workers f l =
             in
             Lwt.return ()
           in
-          create_workers q (worker :: acc) (wid + 1)
+          create_workers q a (worker :: acc) (wid + 1)
       )
   in
   let (_ichan, _ochan) = Lwt_io.pipe () in
   let q = Queue.create () in
-  let l = List.map (fun x -> let r = ref None in Queue.add (x, r) q; r) l in
-  let%lwt () = create_workers q [Lwt.return ()] 0 |> List.rev |> Lwt.join in
-  List.map
-    (fun output_holder ->
-       match !output_holder with
+  let a = Array.make (List.length l) None in
+  List.iteri (fun i x -> Queue.add (x, i) q) l;
+  let%lwt () = create_workers q a [] 0 |> List.rev |> Lwt.join in
+  Array.fold_right
+    (fun b l ->
+       match b with
        | None -> assert false
-       | Some output -> output)
-    l
+       | Some output -> output :: l)
+    a
+    []
   |> Lwt.return
