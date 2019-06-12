@@ -47,11 +47,9 @@ let handle_package path =
   (package, scenarii)
 
 let () =
-  let paths = !Config.corpus |> Sys.readdir |> Array.to_list |> List.map (Filename.concat !Config.corpus) in
-  let packages =
-    MultiProcess.map_p ~workers:!Config.workers handle_package paths
-    |> Lwt_main.run
-  in
-  List.iter
-    (fun (package, _) -> pf "- %s@." (Colis_package.Package.name package))
-    packages
+  !Config.corpus
+  |> Sys.readdir |> Array.to_list
+  |> List.map (Filename.concat !Config.corpus)
+  |> MultiProcess.map_p ~workers:!Config.workers handle_package
+  |> Lwt_main.run
+  |> HtmlReport.generate_and_write ~prefix:!Config.report

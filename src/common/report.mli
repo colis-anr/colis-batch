@@ -1,3 +1,5 @@
+val pp_viz : Format.formatter -> ?id:string -> string -> unit
+
 val with_formatter_to_file :
   string list ->
   (Format.formatter -> 'a) -> 'a

@@ -51,6 +51,31 @@ let (* rec *) ensure_existence path =
   if not (Sys.file_exists path) then
     Unix.mkdir path 0o755 *)
 
+let pp_viz fmt ?(id="jaipasdidee") file =
+  fpf fmt {|
+        <div id="viz-%s"></div>
+        <script>
+          var viz_client_%s = new XMLHttpRequest();
+          var viz_%s = new Viz();
+
+          viz_client_%s.open('GET', '%s');
+          viz_client_%s.onreadystatechange = function() {
+            if (viz_client_%s.readyState === 4){
+              viz_%s.renderSVGElement(viz_client_%s.responseText)
+                .then(function(element) {
+                  document.getElementById('viz-%s').appendChild(element);
+                })
+                .catch(error => {
+                  viz_%s = new Viz();
+                  console.error(error);
+                });
+            }
+          }
+          viz_client_%s.send();
+        </script>
+      |}
+    id id id id file id id id id id id id
+
 let with_formatter_to_file path f =
   let path = Filename.concat_l path in
   ensure_existence (Filename.dirname path);
