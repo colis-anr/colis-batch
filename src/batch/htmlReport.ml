@@ -1,6 +1,6 @@
 open Colis_ext
 
-let generate_and_write_for_scenario ~prefix name packages =
+let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
   let scenario = List.assoc name Colis_package.Scenarii.all in
   (
     Colis_common.Report.with_formatter_to_file
@@ -33,13 +33,12 @@ let generate_and_write_for_scenario ~prefix name packages =
        List.iter
          (fun (package, scenarii) ->
             List.iter
-              (fun (name', scenario) ->
+              (fun (name', states) ->
                  if name' = name then
                    (
-                     let states = Colis_package.Scenario.states scenario in
                      List.iter
                        (fun (status', states) ->
-                          if status' = status && states <> [] then
+                          if status' = status && states <> 0 then
                             fpf fmt "<li><a href=\"../../package/%s/index.html\">%s</a></li>"
                               (Colis_package.Package.name package)
                               (Colis_package.Package.name package)
@@ -49,11 +48,11 @@ let generate_and_write_for_scenario ~prefix name packages =
               )
               scenarii
          )
-         packages
+         packages_and_scenarii
     )
     all_status
 
-let generate_and_write ~prefix ~time packages =
+let generate_and_write ~prefix ~time packages_and_scenarii =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Report"
     ~viz:true
@@ -102,7 +101,7 @@ let generate_and_write ~prefix ~time packages =
          incr packages_accepted
        else
          incr packages_rejected)
-    packages;
+    packages_and_scenarii;
 
   fpf fmt {|
     <h2>Parsing</h2>
@@ -142,6 +141,6 @@ let generate_and_write ~prefix ~time packages =
            (Filename.concat_l ["scenario"; Colis_package.Scenario.name_to_string name; "flowchart.dot"])
            (Colis_package.Scenario.name_to_string name);
 
-         generate_and_write_for_scenario ~prefix name packages)
+         generate_and_write_for_scenario ~prefix name packages_and_scenarii)
       Colis_package.Scenarii.all
   );

@@ -26,3 +26,13 @@ let group compare l =
   match l with
   | [] -> []
   | (key, val_) :: rest -> group key [val_] rest
+
+let rec sub start length = function
+  | [] -> []
+  | h :: q ->
+    if start > 0 then
+      sub (start - 1) length q
+    else if length = 0 then
+      h :: (sub 0 (length - 1) q)
+    else
+      []

@@ -44,13 +44,29 @@ let handle_package path =
   Colis_package.generate_and_write_html_report
     ~prefix:(Filename.concat_l [!Config.report; "package"; Colis_package.Package.name package])
     package scenarii;
+  (* We don't need the scenario nor the states for the general report, so we
+     only remember the number of states per status. This will save lots of
+     memory. *)
+  let scenarii =
+    List.map
+      (fun (name, scenario) ->
+         let scenario =
+           List.map
+             (fun (status, states) ->
+                (status, List.length states))
+             (Colis_package.Scenario.states scenario)
+         in
+         (name, scenario))
+      scenarii
+  in
   (package, scenarii)
 
 let () =
   let start = Unix.gettimeofday () in
-  let packages =
+  let packages_and_scenarii =
     !Config.corpus
     |> Sys.readdir |> Array.to_list
+    |> List.sort compare
     |> List.map (Filename.concat !Config.corpus)
     |> MultiProcess.map_p ~workers:!Config.workers handle_package
     |> Lwt_main.run
@@ -59,4 +75,4 @@ let () =
   HtmlReport.generate_and_write
     ~prefix:!Config.report
     ~time:(end_ -. start)
-    packages
+    packages_and_scenarii
