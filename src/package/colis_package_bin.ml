@@ -19,7 +19,8 @@ let () =
      where the CPU timeout should be an option. And it's actually buggy because
      this will only consider the time from the beginning of all the execution. *)
   Constraints_common.Log.cpu_time_limit := Some (!Config.cpu_timeout);
-  Colis.Options.external_sources := !Config.external_sources
+  Colis.Options.external_sources := !Config.external_sources;
+  Colis.Options.fail_on_unknown_utilities := true
 
 (* FIXME: contents table *)
 (* let () = ContentsTable.load () *)

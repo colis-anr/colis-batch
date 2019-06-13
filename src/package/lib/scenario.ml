@@ -52,8 +52,10 @@ type colis_state = Colis.Symbolic.Semantics.state
 
 type ran =
   { states : colis_state list ;
-    incomplete : colis_state list ;
-    timeout : bool }
+    incomplete : bool ;
+    timeout : bool ;
+    unsupported_utility : (string * string) option ;
+    unsupported_argument : (string * string * string) option }
 
 let states s =
   let rec states s = (* FIXME: regroup by status; otherwise, reports will be broken *)
@@ -115,11 +117,16 @@ let pp_unit_as_dot ~name fmt sc =
 
 let pp_ran_as_dot ~name fmt sc =
   let pp_action_label fmt sc =
-    (match List.length sc.data.incomplete with
-     | 0 -> ()
-     | l -> fpf fmt "|%d incomplete" l);
-    (if sc.data.timeout then
-       fpf fmt "|timeout")
+    if sc.data.incomplete then
+      fpf fmt "|incomplete";
+    if sc.data.timeout then
+      fpf fmt "|timeout";
+    (match sc.data.unsupported_utility with
+     | None -> ()
+     | Some (utility, _) -> fpf fmt "|unsup. util.: %s" utility);
+    (match sc.data.unsupported_argument with
+     | None -> ()
+     | Some (utility, _, arg) -> fpf fmt "|bad arg. for %s: %s" utility arg)
   in
   let pp_edge_label fmt sc =
     fpf fmt "\\n%d" (List.length sc.data.states)

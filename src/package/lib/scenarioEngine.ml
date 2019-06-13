@@ -58,19 +58,23 @@ let run ~cpu_timeout ~package scenario =
     match scenario.scenario with
     | Status status ->
       { scenario = Status status ;
-        data = { states ; incomplete = [] ; timeout = false } }
+        data = { states ; incomplete = false ; timeout = false ; unsupported_utility = None ; unsupported_argument = None } }
     | Action (action, on_success, on_error) ->
       match action with
       | RunScript (script, cmd_line_arguments) ->
-        let ((success, error, incomplete), timeout) =
+        let ((success, error, incomplete), timeout, unsupported_utility, unsupported_argument) =
           try
-            (run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script, false)
+            (run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script, false, None, None)
           with
-            Constraints_common.Log.CPU_time_limit_exceeded ->
-            (([], [], []), true)
+          | Colis.Errors.UnsupportedUtility (utility, msg) ->
+            (([], [], []), false, Some (utility, msg), None)
+          | Colis.Errors.UnsupportedArgument (utility, arg, msg) ->
+            (([], [], []), false, None, Some (utility, arg, msg))
+          | Constraints_common.Log.CPU_time_limit_exceeded ->
+            (([], [], []), true, None, None)
         in
         { scenario = Action (action, run success on_success, run error on_error) ;
-          data = { states ; incomplete ; timeout } }
+          data = { states ; incomplete = (incomplete <> []); timeout ; unsupported_utility ; unsupported_argument } }
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fhs in
