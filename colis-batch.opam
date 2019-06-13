@@ -15,7 +15,7 @@ authors: "Nicolas Jeannerod <nicolas.jeannerod@irif.fr>"
 maintainer: "Nicolas Jeannerod <nicolas.jeannerod@irif.fr>"
 
 pin-depends: [
-  [ "colis-language.dev" "git+https://github.com/colis-anr/colis-language.git" ]
+  [ "colis-language.dev" "git+https://github.com/colis-anr/colis-language.git#irreducible-clauses" ]
 
   # We must add CoLiS-language's pinned dependencies
   [ "morbig.dev"   "git+https://github.com/colis-anr/morbig.git" ]
