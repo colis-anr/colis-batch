@@ -68,10 +68,12 @@ let states s =
 type name =
   | Install
   | Removal
+  | RemovalPurge
 
 let name_to_string = function
   | Install -> "install"
   | Removal -> "removal"
+  | RemovalPurge -> "removal_purge"
 
 let pp_action fmt = function
   | RunScript (script, args) ->

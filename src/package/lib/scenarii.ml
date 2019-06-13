@@ -32,6 +32,28 @@ let removal = (* FIXME: remove files *)
         ~on_error:(status FailedConfig)
     )
 
+let removal_purge =
+  action
+    ~action:(RunScript (Maintscript.Key.Prerm, ["remove"]))
+    ~on_success:(
+      action
+        ~action:(RunScript (Maintscript.Key.Postrm, ["remove"]))
+        ~on_success:(
+          action
+            ~action:(RunScript (Maintscript.Key.Postrm, ["purge"]))
+            ~on_success:(status NotInstalled)
+            ~on_error:(status ConfigFiles)
+        )
+        ~on_error:(status HalfInstalled)
+    )
+    ~on_error:(
+      action
+        ~action:(RunScript (Maintscript.Key.Postinst, ["abort-remove"]))
+        ~on_success:(status Installed)
+        ~on_error:(status FailedConfig)
+    )
+
 let all =
   [ Install, install ;
-    Removal, removal ]
+    Removal, removal ;
+    RemovalPurge, removal_purge ]
