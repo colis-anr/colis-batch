@@ -51,7 +51,8 @@ let (* rec *) ensure_existence path =
   if not (Sys.file_exists path) then
     Unix.mkdir path 0o755 *)
 
-let pp_viz fmt ?(id="jaipasdidee") file =
+let pp_viz fmt file =
+  let id = string_of_int (Random.int (1 lsl 29)) in
   fpf fmt {|
         <div id="viz-%s"></div>
         <script>

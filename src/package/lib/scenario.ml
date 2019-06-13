@@ -39,6 +39,15 @@ let action ~action ~on_success ~on_error =
 let status status =
   { data = () ; scenario = Status status }
 
+let all_status s =
+  let rec status s =
+    match s.scenario with
+    | Status st -> [st]
+    | Action (_, s1, s2) -> status s1 @ status s2
+  in
+  status s
+  |> List.sort_uniq compare
+
 type colis_state = Colis.Symbolic.Semantics.state
 
 type ran =

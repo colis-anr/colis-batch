@@ -1,4 +1,4 @@
-val pp_viz : Format.formatter -> ?id:string -> string -> unit
+val pp_viz : Format.formatter -> string -> unit
 
 val with_formatter_to_file :
   string list ->
