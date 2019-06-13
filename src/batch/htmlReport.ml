@@ -18,9 +18,31 @@ let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
   fpf fmt "<h2>Summary</h2><ul>";
   List.iter
     (fun status ->
-       fpf fmt "<li><a href=\"#%a\">%a</a></li>"
+       fpf fmt "<li><a href=\"#%a\">%a</a> (%d)</li>"
          Colis_package.Scenario.Status.pp status
-         Colis_package.Scenario.Status.pp status)
+         Colis_package.Scenario.Status.pp status
+         (
+           let r = ref 0 in
+           List.iter
+             (fun (_package, scenarii) ->
+                List.iter
+                  (fun (name', states) ->
+                     if name' = name then
+                       (
+                         List.iter
+                           (fun (status', states) ->
+                              if status' = status && states <> 0 then
+                                incr r
+                           )
+                           states
+                       )
+                  )
+                  scenarii
+             )
+             packages_and_scenarii;
+           !r
+         )
+    )
     all_status;
   fpf fmt "</ul>";
   List.iter
