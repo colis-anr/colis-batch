@@ -50,6 +50,7 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
   Maintscript.interp
     ~cmd_line_arguments
     ~states
+    ~package_name:(Package.name package)
     ~key:script
     (Package.maintscript package script)
 
@@ -58,23 +59,27 @@ let run ~cpu_timeout ~package scenario =
     match scenario.scenario with
     | Status status ->
       { scenario = Status status ;
-        data = { states ; incomplete = false ; timeout = false ; unsupported_utility = None ; unsupported_argument = None } }
+        data = make_ran states }
     | Action (action, on_success, on_error) ->
       match action with
       | RunScript (script, cmd_line_arguments) ->
-        let ((success, error, incomplete), timeout, unsupported_utility, unsupported_argument) =
+        let (success, error, data) =
           try
-            (run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script, false, None, None)
+            let (success, error, incomplete) =
+              run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script
+            in
+            (success, error, make_ran ~incomplete:(incomplete<>[]) states)
           with
           | Colis.Errors.UnsupportedUtility (utility, msg) ->
-            (([], [], []), false, Some (utility, msg), None)
-          | Colis.Errors.UnsupportedArgument (utility, arg, msg) ->
-            (([], [], []), false, None, Some (utility, arg, msg))
+            ([], [], make_ran ~unsupported_utility:(utility, msg) states)
+          | Colis.Errors.UnsupportedArgument (utility, msg, arg) ->
+            ([], [], make_ran ~unsupported_argument:(utility, msg, arg) states)
           | Constraints_common.Log.CPU_time_limit_exceeded ->
-            (([], [], []), true, None, None)
+            ([], [], make_ran ~timeout:true states)
+          | Constraints_implementation_efficient_clause.Safe.NotImplemented feature ->
+            ([], [], make_ran ~not_implemented:feature states)
         in
-        { scenario = Action (action, run success on_success, run error on_error) ;
-          data = { states ; incomplete = (incomplete <> []); timeout ; unsupported_utility ; unsupported_argument } }
+        { scenario = Action (action, run success on_success, run error on_error) ; data }
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fhs in

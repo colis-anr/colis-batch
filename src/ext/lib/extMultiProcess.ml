@@ -1,3 +1,4 @@
+exception Error
 
 let forkee inputs_ichan outputs_ochan f =
   (
@@ -22,7 +23,8 @@ let forker inputs_ochan outputs_ichan q a =
           let%lwt () = Lwt_io.write_value inputs_ochan input in
           let%lwt () = Lwt_io.flush inputs_ochan in
           let%lwt output = Lwt_io.read_value outputs_ichan in
-          assert (a.(output_index) = None);
+          if a.(output_index) <> None then
+            raise Error;
           match output with
           | Ok output ->
             a.(output_index) <- Some output;
@@ -83,7 +85,7 @@ let map_p ~workers f l =
   Array.fold_right
     (fun b l ->
        match b with
-       | None -> assert false
+       | None -> raise Error
        | Some output -> output :: l)
     a
     []

@@ -70,7 +70,7 @@ let colis = function
   | _ ->
     raise (Invalid_argument "Maintscript.colis")
 
-let interp ~cpu_timeout ~cmd_line_arguments ~states ~key = function
+let interp ~cpu_timeout ~cmd_line_arguments ~states ~package_name ~key = function
   | Ok None -> (states, [], [])
   | Ok (Some shell) ->
     (* Assertion: it works because we have converted before (with other cmd line
@@ -79,7 +79,10 @@ let interp ~cpu_timeout ~cmd_line_arguments ~states ~key = function
     let sym_states =
       List.map
         (Colis.Symbolic.to_symbolic_state
-           ~vars:[] (* FIXME *)
+           ~vars:[
+             "DPKG_MAINTSCRIPT_NAME", (Key.to_string key) ;
+             "DPKG_MAINTSCRIPT_PACKAGE", package_name ;
+           ] (* FIXME *)
            ~arguments:cmd_line_arguments)
         states
     in

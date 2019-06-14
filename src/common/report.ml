@@ -44,12 +44,9 @@ let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
 let pp_footer fmt () =
   fpf fmt "</body></html>"
 
-let (* rec *) ensure_existence path =
-  assert (0 = Sys.command (spf "mkdir -p %S" path))
-  (* let dir = Filename.dirname path in
-  if dir <> path then ensure_existence dir;
-  if not (Sys.file_exists path) then
-    Unix.mkdir path 0o755 *)
+let ensure_existence path =
+  if Sys.command (spf "mkdir -p %S" path) <> 0 then
+    failwith "ensure_existence"
 
 let pp_viz fmt file =
   let id = string_of_int (Random.int (1 lsl 29)) in

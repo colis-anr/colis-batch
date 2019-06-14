@@ -55,7 +55,19 @@ type ran =
     incomplete : bool ;
     timeout : bool ;
     unsupported_utility : (string * string) option ;
-    unsupported_argument : (string * string * string) option }
+    unsupported_argument : (string * string * string) option ;
+    not_implemented : string option }
+
+let make_ran
+    ?(incomplete=false) ?(timeout=false)
+    ?unsupported_utility ?unsupported_argument
+    ?not_implemented
+    states
+  =
+  { states ;
+    incomplete ; timeout ;
+    unsupported_utility ; unsupported_argument ;
+    not_implemented }
 
 let states s =
   let rec states s = (* FIXME: regroup by status; otherwise, reports will be broken *)
@@ -126,7 +138,10 @@ let pp_ran_as_dot ~name fmt sc =
      | Some (utility, _) -> fpf fmt "|unsup. util.: %s" utility);
     (match sc.data.unsupported_argument with
      | None -> ()
-     | Some (utility, _, arg) -> fpf fmt "|bad arg. for %s: %s" utility arg)
+     | Some (utility, _, arg) -> fpf fmt "|bad arg. for %s: %s" utility arg);
+    (match sc.data.not_implemented with
+     | None -> ()
+     | Some feature -> fpf fmt "|not impl.: %s" feature)
   in
   let pp_edge_label fmt sc =
     fpf fmt "\\n%d" (List.length sc.data.states)
