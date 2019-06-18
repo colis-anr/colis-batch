@@ -6,6 +6,7 @@ type t
 val path : t -> string
 val name : t -> name
 val version : t -> version
+val safe_name : t -> string
 
 val maintscript : t -> Maintscript.Key.t -> Maintscript.t
 val iter_maintscripts : (Maintscript.Key.t * Maintscript.t -> unit) -> t -> unit

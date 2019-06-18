@@ -43,7 +43,7 @@ let handle_package path =
     |> List.map_filter Fun.id
   in
   Colis_package.generate_and_write_html_report
-    ~prefix:(Filename.concat_l [!Config.report; "package"; Colis_package.Package.name package])
+    ~prefix:(Filename.concat_l [!Config.report; "package"; Colis_package.Package.safe_name package])
     package scenarii;
   (* We don't need the scenario nor the states for the general report, so we
      only remember the number of states per status. This will save lots of

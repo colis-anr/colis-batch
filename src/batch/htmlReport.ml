@@ -62,8 +62,8 @@ let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
                        (fun (status', states) ->
                           if status' = status && states <> 0 then
                             fpf fmt "<li><a href=\"../../package/%s/index.html\">%s</a></li>"
-                              (Colis_package.Package.name package)
-                              (Colis_package.Package.name package)
+                              (Colis_package.Package.safe_name package)
+                              (Colis_package.Package.safe_name package)
                        )
                        states
                    )

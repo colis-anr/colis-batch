@@ -11,6 +11,7 @@ type t =
 
 let path pkg = pkg.path
 let name pkg = pkg.name
+let safe_name pkg = pkg.name ^ "_" ^ (soi (Hashtbl.hash pkg.path))
 let version pkg = pkg.version
 let maintscript pkg name = List.assoc name pkg.maintscripts
 let iter_maintscripts f pkg = List.iter f pkg.maintscripts
