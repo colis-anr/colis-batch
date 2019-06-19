@@ -4,10 +4,13 @@ let install = (* FIXME: unpack *)
   run_script
     Maintscript.Key.Preinst ~args:["install"]
     ~on_success:(
-      run_script
-        Maintscript.Key.Postinst ~args:["configure"] (* FIXME: version *)
-        ~on_success:(status Installed)
-        ~on_error:(status FailedConfig)
+      unpack
+        ~on_success:(
+          run_script
+            Maintscript.Key.Postinst ~args:["configure"] (* FIXME: version *)
+            ~on_success:(status Installed)
+            ~on_error:(status FailedConfig)
+        )
     )
     ~on_error:(
       run_script

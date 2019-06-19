@@ -61,6 +61,8 @@ let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : (unit, unit) t) : (ran_leaf, ran_node) t =
     match scenario with
     | Status ((), status) -> Status (states, status)
+    | Unpack ((), on_success) ->
+      Unpack (make_ran_node (), run states on_success) (* FIXME!!! *)
     | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
       let (success, error, ran_node) =
         try

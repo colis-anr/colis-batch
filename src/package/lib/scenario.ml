@@ -25,6 +25,9 @@ type ('leaf, 'node) t =
   | Status of
       'leaf
       * Status.t
+  | Unpack of
+      'node
+      * ('leaf, 'node) t
   | RunScript of
       'node
       * (Maintscript.Key.t * string list)
@@ -32,12 +35,16 @@ type ('leaf, 'node) t =
 
 let status status = Status ((), status)
 
+let unpack ~on_success =
+  Unpack ((), on_success)
+
 let run_script ~on_success ~on_error ?(args=[]) key =
   RunScript ((), (key, args), on_success, on_error)
 
 let all_status sc =
   let rec status = function
     | Status (_, st) -> [st]
+    | Unpack (_, sc) -> status sc
     | RunScript (_, _, sc1, sc2) -> status sc1 @ status sc2
   in
   status sc
@@ -65,6 +72,7 @@ let make_ran_node
 let states sc =
   let rec states = function
     | Status (states, st) -> List.map (fun state -> (st, state)) states
+    | Unpack (_, sc) -> states sc
     | RunScript (_, _, s1, s2) -> states s1 @ states s2
   in
   states sc
@@ -99,6 +107,14 @@ let pp_as_dot ~pp_leaf_decoration ~pp_node_decoration ~name fmt sc =
         (hash sc)
         Status.pp status
         pp_leaf_decoration leaf_decoration
+    | Unpack (node_decoration, on_success) ->
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD><I>unpack</I></TD></TR>%a</TABLE> >];@\n"
+        (hash sc)
+        pp_node_decoration node_decoration;
+      fpf fmt "%d -> %d;@\n"
+        (hash sc) (hash on_success);
+      fpf fmt "@\n@[<h 2>  %a@]@\n"
+        pp_as_dot on_success
 
     | RunScript (node_decoration, script, on_success, on_error) ->
       fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >];@\n"

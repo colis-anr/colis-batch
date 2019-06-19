@@ -21,6 +21,9 @@ let pp_scenario _package name fmt ran =
       fpf fmt "%a@\n[%d states]"
         Scenario.Status.pp status
         (List.length states)
+    | Unpack (_ran_node, sc) ->
+      fpf fmt "unpack@\n- @[%a@]"
+        pp_scenario sc
     | RunScript (_ran_node, script, sc1, sc2) ->
       fpf fmt "%a@\n- @[%a@]@\n- @[%a@]"
         Scenario.pp_run_script script
