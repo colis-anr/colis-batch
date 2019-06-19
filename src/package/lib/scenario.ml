@@ -89,6 +89,11 @@ let name_to_string = function
   | Removal -> "removal"
   | RemovalPurge -> "removal_purge"
 
+let name_to_fancy_string = function
+  | Install -> "Installation"
+  | Removal -> "Removal"
+  | RemovalPurge -> "Removal and Purge"
+
 let pp_action fmt = function
   | RunScript (script, args) ->
     fpf fmt "%s" (Maintscript.Key.to_string script);

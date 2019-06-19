@@ -14,6 +14,7 @@ let name pkg = pkg.name
 let safe_name pkg = pkg.name ^ "_" ^ (soi (Hashtbl.hash pkg.path))
 let version pkg = pkg.version
 let maintscript pkg name = List.assoc name pkg.maintscripts
+let maintscripts pkg = pkg.maintscripts
 let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let parse path =
@@ -28,3 +29,8 @@ let parse path =
          (maintscript_name, Maintscript.parse maintscript_path))
   in
   { path; name; version; maintscripts }
+
+let are_all_maintscripts_ok pkg =
+  List.for_all
+    (fun (_, script) -> Maintscript.has_error script = None)
+    pkg.maintscripts

@@ -36,3 +36,5 @@ let rec sub start length = function
       h :: (sub 0 (length - 1) q)
     else
       []
+
+let flat_map f l = map f l |> flatten
