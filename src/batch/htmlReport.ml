@@ -59,7 +59,7 @@ let gaw_scripts_parsing_rejected ~prefix scripts =
     ~title:"Scripts Rejected by Parsing"
     [prefix; "parsing"; "scripts-parsing-rejected.html"]
   @@ fun fmt ->
-  pp_scripts fmt scripts
+  pp_scripts ~anti_prefix:".." fmt scripts
 
 let group_scripts_by_error extract_error scripts =
   scripts
@@ -83,7 +83,7 @@ let pp_scripts_by_error fmt extract_error scripts =
   fpf fmt "</ul>";
   List.iter
     (fun (msg, scripts) ->
-       fpf fmt "<h3 id=\"#%d\">%s</h3>" (Hashtbl.hash msg) msg;
+       fpf fmt "<h3 id=\"%d\">%s</h3>" (Hashtbl.hash msg) msg;
        pp_scripts ~anti_prefix:".." fmt scripts)
     scripts_by_error
 
