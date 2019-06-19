@@ -13,8 +13,8 @@ let is_ok = function
 
 let unwrap_ok = function
   | Ok e -> e
-  | Error _ -> assert false
+  | Error _ -> raise (Invalid_argument "ExtResult.unwrap_ok")
 
 let unwrap_error = function
-  | Ok _ -> assert false
+  | Ok _ -> raise (Invalid_argument "ExtResult.unwrap_error")
   | Error e -> e
