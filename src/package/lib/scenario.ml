@@ -21,58 +21,53 @@ module Status = struct
     fpf fmt "%s" (to_string status)
 end
 
-type action =
-  (* FIXME: unpack *)
-  | RunScript of Maintscript.Key.t * string list
+type ('leaf, 'node) t =
+  | Status of
+      'leaf
+      * Status.t
+  | RunScript of
+      'node
+      * (Maintscript.Key.t * string list)
+      * ('leaf, 'node) t * ('leaf, 'node) t
 
-type 'a scenario =
-  | Status of Status.t
-  | Action of action * 'a t * 'a t
+let status status = Status ((), status)
 
-and 'a t =
-  { data : 'a ;
-    scenario : 'a scenario }
+let run_script ~on_success ~on_error ?(args=[]) key =
+  RunScript ((), (key, args), on_success, on_error)
 
-let action ~action ~on_success ~on_error =
-  { data = () ; scenario = Action (action, on_success, on_error) }
-
-let status status =
-  { data = () ; scenario = Status status }
-
-let all_status s =
-  let rec status s =
-    match s.scenario with
-    | Status st -> [st]
-    | Action (_, s1, s2) -> status s1 @ status s2
+let all_status sc =
+  let rec status = function
+    | Status (_, st) -> [st]
+    | RunScript (_, _, sc1, sc2) -> status sc1 @ status sc2
   in
-  status s
+  status sc
   |> List.sort_uniq compare
 
 type colis_state = Colis.Symbolic.Semantics.state
 
-type ran =
-  { states : colis_state list ;
-    incomplete : bool ;
+type ran_leaf =
+  colis_state list
+
+type ran_node =
+  { incomplete : bool ;
     timeout : bool ;
     unsupported : (string * string) option ;
     unexpected : exn option }
 
-let make_ran
+let make_ran_node
     ?(incomplete=false) ?(timeout=false)
     ?unsupported ?unexpected
-    states
+    ()
   =
-  { states ;
-    incomplete ; timeout ;
+  { incomplete ; timeout ;
     unsupported ; unexpected }
 
-let states s =
-  let rec states s = (* FIXME: regroup by status; otherwise, reports will be broken *)
-    match s.scenario with
-    | Status st -> List.map (fun state -> (st, state)) s.data.states
-    | Action (_, s1, s2) -> states s1 @ states s2
+let states sc =
+  let rec states = function
+    | Status (states, st) -> List.map (fun state -> (st, state)) states
+    | RunScript (_, _, s1, s2) -> states s1 @ states s2
   in
-  states s
+  states sc
   |> List.sort compare
   |> List.group compare
 
@@ -91,56 +86,50 @@ let name_to_fancy_string = function
   | Removal -> "Removal"
   | RemovalPurge -> "Removal and Purge"
 
-let pp_action fmt = function
-  | RunScript (script, args) ->
-    fpf fmt "%s" (Maintscript.Key.to_string script);
-    List.iter (fpf fmt " %s") args
+let pp_run_script fmt (script, args) =
+  fpf fmt "%s" (Maintscript.Key.to_string script);
+  List.iter (fpf fmt " %s") args
 
-let pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc =
-  let rec pp_as_dot ?parent fmt sc =
-    let n = Hashtbl.hash sc in
-    (
-      match sc.scenario with
-      | Status status ->
-        fpf fmt "%d [label=\"%a\",shape=none];@\n"
-          n
-          Status.pp status
-      | Action (action, on_success, on_error) ->
-        fpf fmt "%d [label=\"{%a%a}\"];@\n@\n@[<h 2>  %a@]@\n@[<h 2>  %a@]@\n"
-          n
-          pp_action action
-          pp_action_label sc
-          (pp_as_dot ~parent:("OK", n)) on_success
-          (pp_as_dot ~parent:("Failed", n)) on_error
-    );
-    (
-      match parent with
-      | None -> ()
-      | Some (kind, parent) ->
-        fpf fmt "%d -> %d [label=\"%s%a\"];@\n"
-          parent n kind
-          pp_edge_label sc
-    )
+let pp_as_dot ~pp_leaf_decoration ~pp_node_decoration ~name fmt sc =
+  let hash = Hashtbl.hash in
+  let rec pp_as_dot fmt sc =
+    match sc with
+    | Status (leaf_decoration, status) ->
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >];@\n"
+        (hash sc)
+        Status.pp status
+        pp_leaf_decoration leaf_decoration
+
+    | RunScript (node_decoration, script, on_success, on_error) ->
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >];@\n"
+        (hash sc)
+        pp_run_script script
+        pp_node_decoration node_decoration;
+      fpf fmt "%d -> %d [label=\"OK\"];@\n%d -> %d [label=\"Failed\"];@\n"
+        (hash sc) (hash on_success) (hash sc) (hash on_error);
+      fpf fmt "@\n@[<h 2>  %a@]@\n@[<h 2>  %a@]@\n"
+        pp_as_dot on_success
+        pp_as_dot on_error
   in
-  fpf fmt "digraph %s {@\n@[<h 2>  node[shape=Mrecord];@\n@\n%a@]}@."
-    (name_to_string name) (pp_as_dot ?parent:None) sc
+  fpf fmt "digraph %s {@\n@[<h 2>  node [shape=plaintext];@\n@\n%a@]}@."
+    (name_to_string name) pp_as_dot sc
 
 let pp_unit_as_dot ~name fmt sc =
   let pp_nop _ _ = () in
-  pp_as_dot ~pp_action_label:pp_nop ~pp_edge_label:pp_nop ~name fmt sc
+  pp_as_dot ~pp_leaf_decoration:pp_nop ~pp_node_decoration:pp_nop ~name fmt sc
 
 let pp_ran_as_dot ~name fmt sc =
-  let pp_action_label fmt sc =
-    if sc.data.incomplete then
-      fpf fmt "|incomplete";
-    if sc.data.timeout then
-      fpf fmt "|timeout";
-    if sc.data.unsupported <> None then
-      fpf fmt "|utility: unsup. feature";
-    if sc.data.unexpected <> None then
-      fpf fmt "|unexpected exception"
+  let pp_leaf_decoration fmt states =
+    fpf fmt "<TR><TD>(%d states)</TD></TR>" (List.length states)
   in
-  let pp_edge_label fmt sc =
-    fpf fmt "\\n%d" (List.length sc.data.states)
+  let pp_node_decoration fmt dec =
+    if dec.incomplete then
+      fpf fmt "<TR><TD>incomplete</TD></TR>";
+    if dec.timeout then
+      fpf fmt "<TR><TD>timeout</TD></TR>";
+    if dec.unsupported <> None then
+      fpf fmt "<TR><TD>unsup. utility</TD></TR>";
+    if dec.unexpected <> None then
+      fpf fmt "<TR><TD>unexpected exception</TD></TR>"
   in
-  pp_as_dot ~pp_action_label ~pp_edge_label ~name fmt sc
+  pp_as_dot ~pp_leaf_decoration ~pp_node_decoration ~name fmt sc

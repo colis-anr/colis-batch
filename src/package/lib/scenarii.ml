@@ -1,54 +1,54 @@
 open Scenario
 
 let install = (* FIXME: unpack *)
-  action
-    ~action:(RunScript (Maintscript.Key.Preinst, ["install"]))
+  run_script
+    Maintscript.Key.Preinst ~args:["install"]
     ~on_success:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postinst, ["configure"])) (* FIXME: version *)
+      run_script
+        Maintscript.Key.Postinst ~args:["configure"] (* FIXME: version *)
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )
     ~on_error:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postrm, ["abort-install"]))
+      run_script
+        Maintscript.Key.Postrm ~args:["abort-install"]
         ~on_success:(status NotInstalled)
         ~on_error:(status HalfInstalled)
     )
 
 let removal = (* FIXME: remove files *)
-  action
-    ~action:(RunScript (Maintscript.Key.Prerm, ["remove"]))
+  run_script
+    Maintscript.Key.Prerm ~args:["remove"]
     ~on_success:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postrm, ["remove"]))
+      run_script
+        Maintscript.Key.Postrm ~args:["remove"]
         ~on_success:(status ConfigFiles)
         ~on_error:(status HalfInstalled)
     )
     ~on_error:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postinst, ["abort-remove"]))
+      run_script
+        Maintscript.Key.Postinst ~args:["abort-remove"]
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )
 
 let removal_purge =
-  action
-    ~action:(RunScript (Maintscript.Key.Prerm, ["remove"]))
+  run_script
+    Maintscript.Key.Prerm ~args:["remove"]
     ~on_success:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postrm, ["remove"]))
+      run_script
+        Maintscript.Key.Postrm ~args:["remove"]
         ~on_success:(
-          action
-            ~action:(RunScript (Maintscript.Key.Postrm, ["purge"]))
+          run_script
+            Maintscript.Key.Postrm ~args:["purge"]
             ~on_success:(status NotInstalled)
             ~on_error:(status ConfigFiles)
         )
         ~on_error:(status HalfInstalled)
     )
     ~on_error:(
-      action
-        ~action:(RunScript (Maintscript.Key.Postinst, ["abort-remove"]))
+      run_script
+        Maintscript.Key.Postinst ~args:["abort-remove"]
         ~on_success:(status Installed)
         ~on_error:(status FailedConfig)
     )

@@ -58,29 +58,25 @@ let run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script =
       script
 
 let run ~cpu_timeout ~package scenario =
-  let rec run states (scenario : unit t) : ran t =
-    match scenario.scenario with
-    | Status status ->
-      { scenario = Status status ;
-        data = make_ran states }
-    | Action (action, on_success, on_error) ->
-      match action with
-      | RunScript (script, cmd_line_arguments) ->
-        let (success, error, data) =
-          try
-            let (success, error, incomplete) =
-              run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script
-            in
-            (success, error, make_ran ~incomplete:(incomplete<>[]) states)
-          with
-          | Colis.Errors.Unsupported (utility, msg) ->
-            ([], [], make_ran ~unsupported:(utility, msg) states)
-          | Constraints_common.Log.CPU_time_limit_exceeded ->
-            ([], [], make_ran ~timeout:true states)
-          | exn ->
-            ([], [], make_ran ~unexpected:exn states)
-        in
-        { scenario = Action (action, run success on_success, run error on_error) ; data }
+  let rec run states (scenario : (unit, unit) t) : (ran_leaf, ran_node) t =
+    match scenario with
+    | Status ((), status) -> Status (states, status)
+    | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
+      let (success, error, ran_node) =
+        try
+          let (success, error, incomplete) =
+            run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script
+          in
+          (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
+        with
+        | Colis.Errors.Unsupported (utility, msg) ->
+          ([], [], make_ran_node ~unsupported:(utility, msg) ())
+        | Constraints_common.Log.CPU_time_limit_exceeded ->
+          ([], [], make_ran_node ~timeout:true ())
+        | exn ->
+          ([], [], make_ran_node ~unexpected:exn ())
+      in
+      RunScript (ran_node, (script, cmd_line_arguments), run success on_success, run error on_error)
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fhs in
