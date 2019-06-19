@@ -51,7 +51,6 @@ let run_script ~cmd_line_arguments ~states ~package ~script =
     ~cmd_line_arguments
     ~states
     ~package_name:(Package.name package)
-    ~key:script
     (Package.maintscript package script)
 
 let run ~cpu_timeout ~package scenario =

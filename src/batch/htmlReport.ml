@@ -36,8 +36,8 @@ let gaw_packages_rejected ~prefix packages =
 let pp_scripts ?(anti_prefix=".") fmt scripts =
   fpf fmt "<ul>";
   List.iter
-    (fun (package, script_key, _) ->
-       let name = Colis_package.Maintscript.Key.to_string script_key in
+    (fun (package, script) ->
+       let name = Colis_package.Maintscript.key_as_string script in
        fpf fmt "<li><a href=\"%s/package/%s/script/%s.html\">%s &gt; %s</a></li>"
          anti_prefix
          (Colis_package.Package.safe_name package)
@@ -63,9 +63,7 @@ let gaw_scripts_parsing_rejected ~prefix scripts =
 
 let group_scripts_by_error extract_error scripts =
   scripts
-  |> List.map
-    (fun (package, key, script) ->
-       (extract_error script, (package, key, script)))
+  |> List.map (fun (package, script) -> (extract_error script, (package, script)))
   |> List.sort (fun (a, _) (b, _) -> compare a b)
   |> List.group compare
   |> List.sort (fun (_, l1) (_, l2) -> - List.compare_lengths l1 l2)
@@ -96,7 +94,7 @@ let gaw_scripts_parsing_errored ~prefix scripts =
   pp_scripts_by_error
     fmt
     (fun script ->
-       match Colis_package.Maintscript.has_error script with
+       match Colis_package.Maintscript.error script with
        | Some (ParsingErrored msg) -> msg
        | _ -> assert false)
     scripts;
@@ -112,7 +110,7 @@ let gaw_scripts_conversion_rejected ~prefix scripts =
   pp_scripts_by_error
     fmt
     (fun script ->
-       match Colis_package.Maintscript.has_error script with
+       match Colis_package.Maintscript.error script with
        | Some (ConversionRejected msg) -> msg
        | _ -> assert false)
     scripts;
@@ -128,7 +126,7 @@ let gaw_scripts_conversion_errored ~prefix scripts =
   pp_scripts_by_error
     fmt
     (fun script ->
-       match Colis_package.Maintscript.has_error script with
+       match Colis_package.Maintscript.error script with
        | Some (ConversionErrored msg) -> msg
        | _ -> assert false)
     scripts;
@@ -226,9 +224,9 @@ let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
     List.flat_map
       (fun package ->
          List.map_filter
-           (fun (key, script) ->
+           (fun (_key, script) ->
               if Colis_package.Maintscript.is_present script then
-                Some (package, key, script)
+                Some (package, script)
               else
                 None)
            (Colis_package.Package.maintscripts package))
@@ -242,9 +240,9 @@ let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
   let add_to x l = l := x :: !l in
   List.iter
     (fun package_script ->
-       let (_, _, script) = package_script in
+       let (_, script) = package_script in
        add_to package_script
-         (match Colis_package.Maintscript.has_error script with
+         (match Colis_package.Maintscript.error script with
           | None -> scripts_accepted
           | Some (ParsingErrored _) -> scripts_parsing_errored
           | Some (ParsingRejected) -> scripts_parsing_rejected

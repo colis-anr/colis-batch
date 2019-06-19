@@ -15,6 +15,9 @@ end
 
 type t
 
+val key : t -> Key.t
+val key_as_string : t -> string
+
 val parse : string -> t
 
 type error =
@@ -24,7 +27,8 @@ type error =
   | ConversionRejected of string
 
 val is_present : t -> bool
-val has_error : t -> error option
+val has_error : t -> bool
+val error : t -> error option
 
 val error_to_string : error -> string
 
@@ -35,7 +39,6 @@ val interp :
   cmd_line_arguments:string list ->
   states:Colis.Symbolic.Semantics.state list ->
   package_name:string ->
-  key:Key.t ->
   t ->
   Colis.Symbolic.Semantics.state list
   * Colis.Symbolic.Semantics.state list

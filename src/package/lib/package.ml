@@ -32,5 +32,5 @@ let parse path =
 
 let are_all_maintscripts_ok pkg =
   List.for_all
-    (fun (_, script) -> Maintscript.has_error script = None)
+    (fun (_, script) -> not (Maintscript.has_error script))
     pkg.maintscripts

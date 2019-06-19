@@ -8,7 +8,7 @@ let pp_parsing_status fmt package =
        fpf fmt "  - %s: %s@."
          (Maintscript.Key.to_string key)
          (if Maintscript.is_present maintscript then
-            (match Maintscript.has_error maintscript with
+            (match Maintscript.error maintscript with
              | None -> "OK"
              | Some e -> Maintscript.error_to_string e)
           else

@@ -37,7 +37,7 @@ let pp_parsing_status fmt package =
     (fun (key, maintscript) ->
        if Maintscript.is_present maintscript then
          let (html_class, status, message) =
-           (match Maintscript.has_error maintscript with
+           (match Maintscript.error maintscript with
             | None -> ("accepted", "OK", "")
             | Some e ->
               match e with
@@ -115,7 +115,7 @@ let generate_and_write ~prefix package scenarii =
              let pp_status fmt msg =
                fpf fmt "<p><strong>Status:</strong> %s</p>" msg
              in
-             match Maintscript.has_error maintscript with
+             match Maintscript.error maintscript with
              | None ->
                pp_status fmt "Accepted";
                fpf fmt "<h2>Colis script</h2><pre><code>";
