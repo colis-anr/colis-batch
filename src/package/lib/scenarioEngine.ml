@@ -70,14 +70,14 @@ let run ~cpu_timeout ~package scenario =
             in
             (success, error, make_ran ~incomplete:(incomplete<>[]) states)
           with
-          | Colis.Errors.UnsupportedUtility (utility, msg) ->
-            ([], [], make_ran ~unsupported_utility:(utility, msg) states)
-          | Colis.Errors.UnsupportedArgument (utility, msg, arg) ->
-            ([], [], make_ran ~unsupported_argument:(utility, msg, arg) states)
+          | Colis.Errors.Unsupported (utility, msg) ->
+            ([], [], make_ran ~unsupported:(utility, msg) states)
           | Constraints_common.Log.CPU_time_limit_exceeded ->
             ([], [], make_ran ~timeout:true states)
           | Constraints_implementation_efficient_clause.Safe.NotImplemented feature ->
             ([], [], make_ran ~not_implemented:feature states)
+          | exn ->
+            ([], [], make_ran ~unexpected:exn states)
         in
         { scenario = Action (action, run success on_success, run error on_error) ; data }
   in
