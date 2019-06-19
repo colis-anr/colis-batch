@@ -59,20 +59,19 @@ let map_p ~workers f l =
           [forkee inputs_ichan outputs_ochan f] (* Not acc! *)
         | pid ->
           let worker =
-            let%lwt () = forker inputs_ochan outputs_ichan q a in
-            Unix.kill pid Sys.sigkill;
-            let%lwt () =
-              try%lwt
-                let%lwt () = Lwt_io.abort inputs_ochan in
-                close_in inputs_ichan;
-                close_out outputs_ochan;
-                let%lwt () = Lwt_io.abort outputs_ichan in
-                Lwt.return ()
-              with
-                _exn ->
-                Lwt.return ()
-            in
-            Lwt.return ()
+            Lwt.finalize
+              (fun () -> forker inputs_ochan outputs_ichan q a)
+              (fun () ->
+                 Unix.kill pid Sys.sigkill;
+                 try%lwt
+                   let%lwt () = Lwt_io.abort inputs_ochan in
+                   close_in inputs_ichan;
+                   close_out outputs_ochan;
+                   let%lwt () = Lwt_io.abort outputs_ichan in
+                   Lwt.return ()
+                 with
+                   _exn ->
+                   Lwt.return ())
           in
           create_workers q a (worker :: acc) (wid + 1)
       )
