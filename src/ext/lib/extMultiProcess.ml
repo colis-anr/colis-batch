@@ -1,11 +1,15 @@
 exception Error
 
-let rec lwt_join_or_first_error all =
-  let%lwt (_, pending) = Lwt.nchoose_split all in
-  if pending = [] then
-    Lwt.return ()
-  else
-    lwt_join_or_first_error pending
+let lwt_join_or_first_error all =
+  let rec lwt_join_or_first_error all =
+    let%lwt (_, pending) = Lwt.nchoose_split all in
+    if pending = [] then
+      Lwt.return ()
+    else
+      lwt_join_or_first_error pending
+  in
+  try%lwt lwt_join_or_first_error all
+  with exn -> List.iter Lwt.cancel all; Lwt.fail exn
 
 let forkee inputs_ichan outputs_ochan f =
   (
