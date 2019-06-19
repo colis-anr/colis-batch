@@ -26,28 +26,23 @@ let forkee inputs_ichan outputs_ochan f =
   exit 0
 
 let forker inputs_ochan outputs_ichan q a =
-  let%lwt () =
-    (
-      try%lwt
-        while%lwt true do
-          let (input, output_index) = Queue.take q in
-          let%lwt () = Lwt_io.write_value inputs_ochan input in
-          let%lwt () = Lwt_io.flush inputs_ochan in
-          let%lwt output = Lwt_io.read_value outputs_ichan in
-          if a.(output_index) <> None then
-            raise Error;
-          match output with
-          | Ok output ->
-            a.(output_index) <- Some output;
-            Lwt.return ()
-          | Error exn ->
-            Lwt.fail exn
-        done
-      with
-      | Queue.Empty -> Lwt.return ()
-    )
-  in
-  Lwt.return ()
+  try%lwt
+    while%lwt true do
+      let (input, output_index) = Queue.take q in
+      let%lwt () = Lwt_io.write_value inputs_ochan input in
+      let%lwt () = Lwt_io.flush inputs_ochan in
+      let%lwt output = Lwt_io.read_value outputs_ichan in
+      if a.(output_index) <> None then
+        raise Error;
+      match output with
+      | Ok output ->
+        a.(output_index) <- Some output;
+        Lwt.return ()
+      | Error exn ->
+        Lwt.fail exn
+    done
+  with
+  | Queue.Empty -> Lwt.return ()
 
 let map_p ~workers f l =
   let rec create_workers q a acc wid =
