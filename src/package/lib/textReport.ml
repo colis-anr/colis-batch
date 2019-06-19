@@ -4,15 +4,12 @@ let pp_parsing_status fmt package =
   fpf fmt "Parsed:@\n- name: %s@\n- version: %s@\n- scripts:@."
     (Package.name package) (Package.version package);
   Package.iter_maintscripts
-    (fun (key, maintscript) ->
+    (fun maintscript ->
        fpf fmt "  - %s: %s@."
-         (Maintscript.Key.to_string key)
-         (if Maintscript.is_present maintscript then
-            (match Maintscript.error maintscript with
-             | None -> "OK"
-             | Some e -> Maintscript.error_to_string e)
-          else
-            "absent"))
+         (Maintscript.key_as_string maintscript)
+         (match Maintscript.error maintscript with
+          | None -> "OK"
+          | Some e -> Maintscript.error_to_string e))
     package;
   fpf fmt "@."
 

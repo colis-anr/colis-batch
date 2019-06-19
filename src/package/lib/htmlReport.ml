@@ -34,24 +34,20 @@ let pp_parsing_status fmt package =
   fpf fmt "<dt>Version</dt><dd>%s</dd>" (Package.version package);
   fpf fmt "<dt>Maintainer scripts</dt><dd><dl>";
   Package.iter_maintscripts
-    (fun (key, maintscript) ->
-       if Maintscript.is_present maintscript then
-         let (html_class, status, message) =
-           (match Maintscript.error maintscript with
-            | None -> ("accepted", "OK", "")
-            | Some e ->
-              match e with
-              | ParsingErrored msg -> ("errored", "Error in parsing", msg)
-              | ParsingRejected -> ("rejected", "Rejected by parsing", "")
-              | ConversionErrored msg -> ("errored", "Error in conversion", msg)
-              | ConversionRejected msg -> ("rejected", "Rejected by conversion", msg))
-         in
-         fpf fmt "<dt><a href=\"%s\">%s</a></dt><dd class=\"%s\">%s %s</dd>"
-           ("script/" ^ Maintscript.Key.to_string key ^ ".html")
-           (Maintscript.Key.to_string key) html_class status message
-       else
-         fpf fmt "<dt>%s</dt><dd class=\"empty\">absent</dd>"
-           (Maintscript.Key.to_string key))
+    (fun maintscript ->
+       let (html_class, status, message) =
+         (match Maintscript.error maintscript with
+          | None -> ("accepted", "OK", "")
+          | Some e ->
+            match e with
+            | ParsingErrored msg -> ("errored", "Error in parsing", msg)
+            | ParsingRejected -> ("rejected", "Rejected by parsing", "")
+            | ConversionErrored msg -> ("errored", "Error in conversion", msg)
+            | ConversionRejected msg -> ("rejected", "Rejected by conversion", msg))
+       in
+       fpf fmt "<dt><a href=\"%s\">%s</a></dt><dd class=\"%s\">%s %s</dd>"
+         ("script/" ^ Maintscript.key_as_string maintscript ^ ".html")
+         (Maintscript.key_as_string maintscript) html_class status message)
     package;
   fpf fmt "</dl></dl>"
 
@@ -103,52 +99,50 @@ let generate_and_write ~prefix package scenarii =
     pp_scenarii_summaries fmt scenarii
   );
   Package.iter_maintscripts
-    (fun (key, maintscript) ->
-       if Maintscript.is_present maintscript then
-         (
-           Colis_common.Report.with_formatter_to_html_report
-             ~title:("Package Report – Script " ^ Maintscript.Key.to_string key)
-             ~highlight:true
-             [prefix; "script"; Maintscript.Key.to_string key ^ ".html"]
-           @@ fun fmt ->
-           (
-             let pp_status fmt msg =
-               fpf fmt "<p><strong>Status:</strong> %s</p>" msg
-             in
-             match Maintscript.error maintscript with
-             | None ->
-               pp_status fmt "Accepted";
-               fpf fmt "<h2>Colis script</h2><pre><code>";
-               Colis.pp_print_colis fmt (Maintscript.colis maintscript);
-               fpf fmt "</code></pre>"
-             | Some error ->
-               match error with
-               | ParsingErrored msg ->
-                 pp_status fmt ("Parsing errored with: " ^ msg)
-               | ParsingRejected ->
-                 pp_status fmt "Parsing rejected"
-               | ConversionErrored msg ->
-                 pp_status fmt ("Conversion errored with: " ^ msg)
-               | ConversionRejected msg ->
-                 pp_status fmt ("Conversion rejected with: " ^ msg)
-           );
-           (
-             fpf fmt "<hr/><h2>Original Shell script</h2><pre><code class=\"bash\">";
-             let ichan = open_in (Filename.concat_l [Package.path package; Maintscript.Key.to_string key]) in
-             let buflen = 1024 in
-             let buf = Bytes.create buflen in
-             let rec copy_all () =
-               match input ichan buf 0 buflen with
-               | 0 -> ()
-               | n ->
-                 fpf fmt "%s" (Bytes.sub_string buf 0 n);
-                 copy_all ()
-             in
-             copy_all ();
-             close_in ichan;
-             fpf fmt "</code></pre>"
-           )
-         )
+    (fun maintscript ->
+       Colis_common.Report.with_formatter_to_html_report
+         ~title:("Package Report – Script " ^ Maintscript.key_as_string maintscript)
+         ~highlight:true
+         [prefix; "script"; Maintscript.key_as_string maintscript ^ ".html"]
+       @@ fun fmt ->
+       (
+         let pp_status fmt msg =
+           fpf fmt "<p><strong>Status:</strong> %s</p>" msg
+         in
+         match Maintscript.error maintscript with
+         | None ->
+           pp_status fmt "Accepted";
+           fpf fmt "<h2>Colis script</h2><pre><code>";
+           Colis.pp_print_colis fmt (Maintscript.colis maintscript);
+           fpf fmt "</code></pre>"
+         | Some error ->
+           match error with
+           | ParsingErrored msg ->
+             pp_status fmt ("Parsing errored with: " ^ msg)
+           | ParsingRejected ->
+             pp_status fmt "Parsing rejected"
+           | ConversionErrored msg ->
+             pp_status fmt ("Conversion errored with: " ^ msg)
+           | ConversionRejected msg ->
+             pp_status fmt ("Conversion rejected with: " ^ msg)
+       );
+       (
+         fpf fmt "<hr/><h2>Original Shell script</h2><pre><code class=\"bash\">";
+         let ichan = open_in (Filename.concat_l [Package.path package; Maintscript.key_as_string maintscript]) in
+         let buflen = 1024 in
+         let buf = Bytes.create buflen in
+         let rec copy_all () =
+           match input ichan buf 0 buflen with
+           | 0 -> ()
+           | n ->
+             fpf fmt "%s" (Bytes.sub_string buf 0 n);
+             copy_all ()
+         in
+         copy_all ();
+         close_in ichan;
+         fpf fmt "</code></pre>"
+       )
+
     )
     package;
 

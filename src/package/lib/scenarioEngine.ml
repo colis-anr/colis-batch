@@ -46,12 +46,16 @@ var/tmp"
     (fun fhs dir -> Colis.Symbolic.FilesystemSpec.add_dir dir fhs)
     Colis.Symbolic.FilesystemSpec.empty
 
-let run_script ~cmd_line_arguments ~states ~package ~script =
-  Maintscript.interp
-    ~cmd_line_arguments
-    ~states
-    ~package_name:(Package.name package)
-    (Package.maintscript package script)
+let run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script =
+  match Package.maintscript package script with
+  | None -> (states, [], [])
+  | Some script ->
+    Maintscript.interp
+      ~cpu_timeout
+      ~cmd_line_arguments
+      ~states
+      ~package_name:(Package.name package)
+      script
 
 let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : unit t) : ran t =

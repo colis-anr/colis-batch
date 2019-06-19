@@ -17,6 +17,7 @@ type t
 
 val key : t -> Key.t
 val key_as_string : t -> string
+val has_key : Key.t -> t -> bool
 
 val parse : string -> t
 
@@ -26,7 +27,6 @@ type error =
   | ConversionErrored of string
   | ConversionRejected of string
 
-val is_present : t -> bool
 val has_error : t -> bool
 val error : t -> error option
 

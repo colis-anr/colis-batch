@@ -223,12 +223,8 @@ let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
   let scripts =
     List.flat_map
       (fun package ->
-         List.map_filter
-           (fun (_key, script) ->
-              if Colis_package.Maintscript.is_present script then
-                Some (package, script)
-              else
-                None)
+         List.map
+           (fun script -> (package, script))
            (Colis_package.Package.maintscripts package))
       packages
   in

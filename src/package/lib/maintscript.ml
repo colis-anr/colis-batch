@@ -36,39 +36,30 @@ let error_to_string = function
 
 type t =
   { key : Key.t ;
-    content : (Morsmall.AST.program option, error) result }
+    content : (Morsmall.AST.program, error) result }
 
 let key m = m.key
 let key_as_string m = Key.to_string m.key
+let has_key k m = m.key = k
 
 let parse path =
   let key = Key.from_string_exn (Filename.basename path) in
   let content =
-    if Sys.file_exists path then
-      (
-        try
-          let shell = Morsmall.parse_file path in
-          try
-            (* We try to convert with dummy arguments to see if we really can. *)
-            (* FIXME: we need a better way than parsing again and again. *)
-            let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
-            Ok (Some shell)
-          with
-          | Colis.Errors.ConversionError msg -> Error (ConversionRejected msg)
-          | exn -> Error (ConversionErrored (Printexc.to_string exn))
-        with
-        | Morsmall.SyntaxError _pos -> Error ParsingRejected
-        | exn -> Error (ParsingErrored (Printexc.to_string exn))
-      )
-    else
-      Ok None
+    try
+      let shell = Morsmall.parse_file path in
+      try
+        (* We try to convert with dummy arguments to see if we really can. *)
+        (* FIXME: we need a better way than parsing again and again. *)
+        let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
+        Ok shell
+      with
+      | Colis.Errors.ConversionError msg -> Error (ConversionRejected msg)
+      | exn -> Error (ConversionErrored (Printexc.to_string exn))
+    with
+    | Morsmall.SyntaxError _pos -> Error ParsingRejected
+    | exn -> Error (ParsingErrored (Printexc.to_string exn))
   in
   { key; content }
-
-let is_present m =
-  match m.content with
-  | Ok None -> false
-  | _ -> true
 
 let error m =
   match m.content with
@@ -80,15 +71,14 @@ let has_error m =
 
 let colis m =
   match m.content with
-  | Ok (Some shell) ->
+  | Ok shell ->
     Colis.convert_shell_file ~cmd_line_arguments:["DUM"; "MY"] shell
   | _ ->
     raise (Invalid_argument "Maintscript.colis")
 
 let interp ~cpu_timeout ~cmd_line_arguments ~states ~package_name m =
   match m.content with
-  | Ok None -> (states, [], [])
-  | Ok (Some shell) ->
+  | Ok shell ->
     (* Assertion: it works because we have converted before (with other cmd line
        arguments). *)
     let colis = Colis.convert_shell_file ~cmd_line_arguments shell in
