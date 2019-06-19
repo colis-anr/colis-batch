@@ -1,5 +1,12 @@
 exception Error
 
+let rec lwt_join_or_first_error all =
+  let%lwt (_, pending) = Lwt.nchoose_split all in
+  if pending = [] then
+    Lwt.return ()
+  else
+    lwt_join_or_first_error pending
+
 let forkee inputs_ichan outputs_ochan f =
   (
     try
@@ -80,7 +87,7 @@ let map_p ~workers f l =
   let q = Queue.create () in
   let a = Array.make (List.length l) None in
   List.iteri (fun i x -> Queue.add (x, i) q) l;
-  let%lwt () = create_workers q a [] 0 |> List.rev |> Lwt.join in
+  let%lwt () = create_workers q a [] 0 |> List.rev |> lwt_join_or_first_error in
   Array.fold_right
     (fun b l ->
        match b with
