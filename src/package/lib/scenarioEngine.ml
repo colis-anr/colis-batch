@@ -74,8 +74,6 @@ let run ~cpu_timeout ~package scenario =
             ([], [], make_ran ~unsupported:(utility, msg) states)
           | Constraints_common.Log.CPU_time_limit_exceeded ->
             ([], [], make_ran ~timeout:true states)
-          | Constraints_implementation_efficient_clause.Safe.NotImplemented feature ->
-            ([], [], make_ran ~not_implemented:feature states)
           | exn ->
             ([], [], make_ran ~unexpected:exn states)
         in

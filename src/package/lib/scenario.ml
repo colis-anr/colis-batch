@@ -55,19 +55,16 @@ type ran =
     incomplete : bool ;
     timeout : bool ;
     unsupported : (string * string) option ;
-    not_implemented : string option ;
     unexpected : exn option }
 
 let make_ran
     ?(incomplete=false) ?(timeout=false)
     ?unsupported ?unexpected
-    ?not_implemented
     states
   =
   { states ;
     incomplete ; timeout ;
-    unsupported ; unexpected ;
-    not_implemented }
+    unsupported ; unexpected }
 
 let states s =
   let rec states s = (* FIXME: regroup by status; otherwise, reports will be broken *)
@@ -141,9 +138,7 @@ let pp_ran_as_dot ~name fmt sc =
     if sc.data.unsupported <> None then
       fpf fmt "|utility: unsup. feature";
     if sc.data.unexpected <> None then
-      fpf fmt "|unexpected exception";
-    if sc.data.not_implemented <> None then
-      fpf fmt "|clause: not impl. feature"
+      fpf fmt "|unexpected exception"
   in
   let pp_edge_label fmt sc =
     fpf fmt "\\n%d" (List.length sc.data.states)
