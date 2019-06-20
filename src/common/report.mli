@@ -5,7 +5,7 @@ val with_formatter_to_file :
   (Format.formatter -> 'a) -> 'a
 
 val with_formatter_to_html_report :
-  ?title:string ->
+  title:string ->
   ?highlight:bool ->
   ?viz:bool ->
   string list ->

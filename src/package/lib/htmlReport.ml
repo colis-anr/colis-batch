@@ -2,7 +2,7 @@ open Colis_ext
 
 let nb_states_to_report = 100 (* FIXME: option *)
 
-let pp_viz fmt ?(id="jaipasdidee") file =
+let pp_viz fmt ?(id="noideafixme") file =
   fpf fmt {|
     <div id="viz-%s"></div>
     <script>
@@ -91,7 +91,7 @@ let pp_scenario fmt ran =
 let generate_and_write ~prefix package scenarii =
   (
     Colis_common.Report.with_formatter_to_html_report
-      ~title:"Package Report"
+      ~title:(Package.name package)
       ~viz:true
       [prefix; "index.html"]
     @@ fun fmt ->
@@ -101,7 +101,7 @@ let generate_and_write ~prefix package scenarii =
   Package.iter_maintscripts
     (fun maintscript ->
        Colis_common.Report.with_formatter_to_html_report
-         ~title:("Package Report – Script " ^ Maintscript.key_as_string maintscript)
+         ~title:(spf "%s – %s" (Package.name package) (Maintscript.key_as_string maintscript))
          ~highlight:true
          [prefix; "script"; Maintscript.key_as_string maintscript ^ ".html"]
        @@ fun fmt ->
@@ -150,7 +150,7 @@ let generate_and_write ~prefix package scenarii =
     (fun (name, scenario) ->
        (
          Colis_common.Report.with_formatter_to_html_report
-           ~title:(spf "Package Report – Scenario %s" (Scenarii.Name.to_fancy_string name))
+           ~title:(spf "%s – %s" (Package.name package) (Scenarii.Name.to_fancy_string name))
            ~viz:true
            [prefix; "scenario"; Scenarii.Name.to_string name; "index.html"]
          @@ fun fmt ->
@@ -182,7 +182,7 @@ let generate_and_write ~prefix package scenarii =
                        );
                        (
                          Colis_common.Report.with_formatter_to_html_report
-                           ~title:(spf "Package Report – Scenario %s – %s #%s" (Scenarii.Name.to_fancy_string name) status id)
+                           ~title:(spf "%s – %s – %s #%s" (Package.name package) (Scenarii.Name.to_fancy_string name) status id)
                            ~viz:true
                            [prefix; "scenario"; Scenarii.Name.to_string name; status; id ^ ".html"]
                          @@ fun fmt ->

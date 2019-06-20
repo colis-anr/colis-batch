@@ -289,7 +289,7 @@ let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
 let generate_and_write ~prefix ~time packages_and_scenarii =
 
   Colis_common.Report.with_formatter_to_html_report
-    ~title:"Report"
+    ~title:"Home"
     ~viz:true
     [prefix; "index.html"]
   @@ fun fmt ->

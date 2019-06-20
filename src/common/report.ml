@@ -84,12 +84,7 @@ let with_formatter_to_file path f =
   close_out ochan;
   y
 
-let with_formatter_to_html_report ?title ?highlight ?viz path f =
-  let title =
-    match title with
-    | None -> "CoLiS"
-    | Some title -> "CoLiS – " ^ title
-  in
+let with_formatter_to_html_report ~title ?highlight ?viz path f =
   with_formatter_to_file path @@ fun fmt ->
   pp_header ~title ?highlight ?viz fmt ();
   let y = f fmt in
