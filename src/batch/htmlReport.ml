@@ -144,14 +144,14 @@ let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
   let scenario = List.assoc name Colis_package.Scenarii.all in
   (
     Colis_common.Report.with_formatter_to_file
-      [prefix; "scenario"; Colis_package.Scenario.name_to_string name; "flowchart.dot"]
+      [prefix; "scenario"; Colis_package.Scenarii.Name.to_string name; "flowchart.dot"]
     @@ fun fmt ->
-    Colis_package.Scenario.pp_unit_as_dot ~name fmt scenario
+    Colis_package.Scenario.pp_clean_as_dot fmt scenario
   );
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scenario Report"
     ~viz:true
-    [prefix; "scenario"; Colis_package.Scenario.name_to_string name; "index.html"]
+    [prefix; "scenario"; Colis_package.Scenarii.Name.to_string name; "index.html"]
   @@ fun fmt ->
   Colis_common.Report.pp_viz fmt "flowchart.dot";
   let all_status = Colis_package.Scenario.all_status scenario in
@@ -319,10 +319,10 @@ let generate_and_write ~prefix ~time packages_and_scenarii =
     List.iter
       (fun (name, _) ->
          fpf fmt "<div><h3>%s</h3>%a<a href=\"scenario/%s/index.html\">Details</a></div>"
-           (Colis_package.Scenario.name_to_fancy_string name)
+           (Colis_package.Scenarii.Name.to_fancy_string name)
            Colis_common.Report.pp_viz
-           (Filename.concat_l ["scenario"; Colis_package.Scenario.name_to_string name; "flowchart.dot"])
-           (Colis_package.Scenario.name_to_string name);
+           (Filename.concat_l ["scenario"; Colis_package.Scenarii.Name.to_string name; "flowchart.dot"])
+           (Colis_package.Scenarii.Name.to_string name);
 
          generate_and_write_for_scenario ~prefix name packages_and_scenarii)
       Colis_package.Scenarii.all

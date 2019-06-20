@@ -1,5 +1,22 @@
 open Scenario
 
+module Name = struct
+  type t =
+    | Install
+    | Removal
+    | RemovalPurge
+
+  let to_string = function
+    | Install -> "install"
+    | Removal -> "removal"
+    | RemovalPurge -> "removal_purge"
+
+  let to_fancy_string = function
+    | Install -> "Installation"
+    | Removal -> "Removal"
+    | RemovalPurge -> "Removal and Purge"
+end
+
 let install = (* FIXME: unpack *)
   run_script
     Maintscript.Key.Preinst ~args:["install"]
@@ -57,6 +74,8 @@ let removal_purge =
     )
 
 let all =
-  [ Install, install ;
+  Name.[
+    Install, install ;
     Removal, removal ;
-    RemovalPurge, removal_purge ]
+    RemovalPurge, removal_purge
+  ]
