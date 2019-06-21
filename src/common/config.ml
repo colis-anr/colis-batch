@@ -1,21 +1,31 @@
-let spf = Format.sprintf
+let spf = Format.asprintf
+let pp_arg_list = Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ") pp_print_string)
 
-let contents = ref "contents"
-let corpus = ref "corpus"
-let cpu_timeout = ref 5.
-let external_sources = ref "external_sources"
+let def_contents = ["contents"]
+let def_corpus = "corpus"
+let def_cpu_timeout = 5.
+let def_external_sources = "external_sources"
+let def_report = "report"
+let def_workers = 2
+
+let contents = ref [] (* On purpose! *)
+let corpus = ref def_corpus
+let cpu_timeout = ref def_cpu_timeout
+let external_sources = ref def_external_sources
 let package = ref None
-let report = ref "report"
-let workers = ref 2
+let report = ref def_report
+let workers = ref def_workers
+
+let add l x = l := x :: !l
 
 let speclist ~one_package =
   let speclist =
     Arg.[
-      "--contents",    Set_string contents,    spf "FILE Sets the path to the contents file (default: %s)" !contents;
-      "--cpu-timeout", Set_float  cpu_timeout, spf "NB Sets the CPU timeout, in seconds (default: %.0f)" !cpu_timeout;
-      "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" !external_sources;
-      "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" !report;
-      "--workers",     Set_int    workers,     spf "NB Sets the number of workers (default: %d)" !workers;
+      "--contents",    String (add contents),  spf "FILES Sets the path to the contents file (default: %a)" pp_arg_list def_contents;
+      "--cpu-timeout", Set_float  cpu_timeout, spf "NB Sets the CPU timeout, in seconds (default: %.0f)" def_cpu_timeout;
+      "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" def_external_sources;
+      "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" def_report;
+      "--workers",     Set_int    workers,     spf "NB Sets the number of workers (default: %d)" def_workers;
     ]
   in
   let speclist =
@@ -42,14 +52,16 @@ let parse_command_line ~one_package =
          | None -> package := Some arg
        else
          raise (Arg.Bad "No package expected."))
-    (usage ~one_package)
+    (usage ~one_package);
+  contents := List.rev !contents;
+  if !contents = [] then contents := def_contents
 
 let print_usage ~one_package =
   Arg.usage (speclist ~one_package) (usage ~one_package)
 
 let check_values ~one_package =
-  if not Sys.(file_exists !contents) then
-    raise (Arg.Bad (spf "Contents file (%s) must exist." !contents));
+  if List.exists (fun content -> not Sys.(file_exists content)) !contents then
+    raise (Arg.Bad (spf "All contents file (%a) must exist." pp_arg_list !contents));
   if not (!cpu_timeout > 0.) then
     raise (Arg.Bad (spf "CPU timeout (%.0f) must be positive." !cpu_timeout));
   if not Sys.(file_exists !external_sources && is_directory !external_sources) then
