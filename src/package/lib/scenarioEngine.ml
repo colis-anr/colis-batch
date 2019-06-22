@@ -82,5 +82,6 @@ let run ~cpu_timeout ~package scenario =
   in
   let root = Constraints.Var.fresh ~hint:"r" () in
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fhs in
+  let disj = List.map Constraints.Clause.make_initial disj in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
   run stas scenario
