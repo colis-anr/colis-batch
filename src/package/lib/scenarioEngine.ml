@@ -17,6 +17,8 @@ media
 opt
 proc
 root
+run
+run/lock
 sbin
 srv
 tmp
@@ -26,20 +28,34 @@ usr/include
 usr/lib
 usr/sbin
 usr/share
+usr/share/man
+usr/share/misc
 usr/src
 usr/X11R6
 usr/local
+usr/local/bin
+usr/local/etc
+usr/local/games
+usr/local/include
+usr/local/lib
+usr/local/man
+usr/local/sbin
+usr/local/share
+usr/local/src
 var
 var/cache
+var/lib
+var/lib/misc
 var/lock
 var/log
-var/mail
+var/opt
 var/run
 var/spool
 var/spool/cron
 var/spool/mail
 var/spool/mqueue
-var/tmp"
+var/tmp
+var/www"
   |> String.split_on_char '\n'
   |> List.map (String.split_on_char '/')
   |> List.fold_left
