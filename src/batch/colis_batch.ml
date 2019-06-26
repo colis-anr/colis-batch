@@ -24,7 +24,7 @@ let () =
 
 let () =
   epf "Parsing contents table... @?";
-  ContentsTable.load ();
+  List.iter Contents.scan !Colis_common.Config.contents;
   epf "done!@."
 
 let handle_package path =

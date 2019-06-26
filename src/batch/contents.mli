@@ -1,17 +1,13 @@
-(* module for handling Contents files *)
+(** {1 Contents}
 
-type t
-(* type representing a table associating to a package name a list of
-   file names. *)
+    module for handling Contents files *)
 
-val newtable: unit -> t
+val scan: string -> unit
+(** [scanfile filename] scans the Contents file with name [filename],
+    and adds its contents to the internal table. *)
 
-val scan: string -> t -> unit
-(* [scanfile filename table] scans the Contents file with name [filename],
-   and adds its contents to [table].
- *)
+val print: unit -> unit
+(** dumps the internal table to [stdout] *)
 
-val print: t -> unit
- (* print [t] dumps [t] to [stdout] *)
-
-val get_files : t -> string -> string list
+val get_files : string -> string list
+(** [get_files package] returns a list of path of regular files in [package]. *)

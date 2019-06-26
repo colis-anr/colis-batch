@@ -1,12 +1,10 @@
 exception Contents of string
 
-type t = (string,string) Hashtbl.t
-
 let is_space c = (c=' ') || (c='\t')
 
-let newtable () = (Hashtbl.create 1000:t)
+let table = Hashtbl.create 1000
 
-let scan filename table =
+let scan filename =
   let handle_line s linenumber =
     (* scan a line from right to left *)
     let rec read_packages i l packages_acc =
@@ -57,19 +55,17 @@ let scan filename table =
   try handle_lines 1
   with End_of_file -> close_in inc;;
 
-let get_files table package =
+let get_files package =
   Hashtbl.find_all table package
 
-let print t =
-  let lastpackage=ref ""
-  in
+let print () =
+  let lastpackage = ref "" in
   Hashtbl.iter
-    (fun package filename->
-      if package <> !lastpackage
-      then begin
-          Printf.printf "\nPackage: %s\n" package;
-          lastpackage := package
-        end;
-      Printf.printf "%s\n" filename
-    )
-    t
+    (fun package filename ->
+       if package <> !lastpackage then
+         (
+           Format.printf "@\nPackage: %s@." package;
+           lastpackage := package
+         );
+       Format.printf "%s@." filename)
+    table
