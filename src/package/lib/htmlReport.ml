@@ -88,12 +88,15 @@ let pp_scenario fmt ran =
     (Scenario.states ran);
   fpf fmt "</dl>"
 
-let generate_and_write ~prefix package scenarii =
+let generate_and_write ?(prefix=[]) ~copy_static package scenarii =
+  if copy_static then
+    Colis_common.Report.copy_static_to ["static"];
+
   (
     Colis_common.Report.with_formatter_to_html_report
       ~title:(Package.name package)
       ~viz:true
-      [prefix; "index.html"]
+      (prefix @ ["index.html"])
     @@ fun fmt ->
     pp_parsing_status fmt package;
     pp_scenarii_summaries fmt scenarii
@@ -103,7 +106,7 @@ let generate_and_write ~prefix package scenarii =
        Colis_common.Report.with_formatter_to_html_report
          ~title:(spf "%s – %s" (Package.name package) (Maintscript.key_as_string maintscript))
          ~highlight:true
-         [prefix; "script"; Maintscript.key_as_string maintscript ^ ".html"]
+         (prefix @ ["script"; Maintscript.key_as_string maintscript ^ ".html"])
        @@ fun fmt ->
        (
          let pp_status fmt msg =
@@ -152,13 +155,13 @@ let generate_and_write ~prefix package scenarii =
          Colis_common.Report.with_formatter_to_html_report
            ~title:(spf "%s – %s" (Package.name package) (Scenarii.Name.to_fancy_string name))
            ~viz:true
-           [prefix; "scenario"; Scenarii.Name.to_string name; "index.html"]
+           (prefix @ ["scenario"; Scenarii.Name.to_string name; "index.html"])
          @@ fun fmt ->
          pp_scenario fmt scenario
        );
        (
          Colis_common.Report.with_formatter_to_file
-           [prefix; "scenario"; Scenarii.Name.to_string name; "flowchart.dot"]
+           (prefix @ ["scenario"; Scenarii.Name.to_string name; "flowchart.dot"])
          @@ fun fmt ->
          Scenario.pp_ran_as_dot fmt scenario
        );
@@ -173,7 +176,7 @@ let generate_and_write ~prefix package scenarii =
                        let id = string_of_int id in
                        (
                          Colis_common.Report.with_formatter_to_file
-                           [prefix; "scenario"; Scenarii.Name.to_string name; status; id ^ ".dot"]
+                           (prefix @ ["scenario"; Scenarii.Name.to_string name; status; id ^ ".dot"])
                          @@ fun fmt ->
                          let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
                          Colis.Constraints.Clause.pp_sat_conj_as_dot
@@ -184,7 +187,7 @@ let generate_and_write ~prefix package scenarii =
                          Colis_common.Report.with_formatter_to_html_report
                            ~title:(spf "%s – %s – %s #%s" (Package.name package) (Scenarii.Name.to_fancy_string name) status id)
                            ~viz:true
-                           [prefix; "scenario"; Scenarii.Name.to_string name; status; id ^ ".html"]
+                           (prefix @ ["scenario"; Scenarii.Name.to_string name; status; id ^ ".html"])
                          @@ fun fmt ->
                          pp_viz fmt (id ^ ".dot");
                          fpf fmt "<pre>";

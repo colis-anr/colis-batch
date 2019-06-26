@@ -36,4 +36,4 @@ let () =
              ~package scenario in
          (name, ran))
   in
-  Colis_package.generate_and_write_html_report ~prefix:!Config.report package scenarii
+  Colis_package.generate_and_write_html_report ~copy_static:true package scenarii

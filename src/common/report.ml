@@ -1,6 +1,11 @@
 open Colis_ext
 
-let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
+let copy_static_to path =
+  assert (0 = Sys.command (spf "cp -R %S/static %S/%S"
+                             !Config.share
+                             !Config.report (String.concat "/" path)))
+
+let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
   fpf fmt {|
     <!DOCTYPE html>
     <html>
@@ -21,19 +26,21 @@ let pp_header ~title ?(highlight=false) ?(viz=false) fmt () =
     title;
   if highlight then
     fpf fmt {|
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/styles/github.min.css">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.14.2/highlight.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"></script>
+        <link rel="stylesheet" href="%s/static/highlight.js/9.14.2/styles/github.min.css">
+        <script src="%s/static/highlight.js/9.14.2/highlight.min.js"></script>
+        <script src="%s/static/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"></script>
         <script>
           hljs.initHighlightingOnLoad();
           hljs.initLineNumbersOnLoad();
         </script>
-      |};
+      |}
+      rev_path rev_path rev_path;
   if viz then
     fpf fmt {|
-        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/viz.js"></script>
-        <script src="https://github.com/mdaines/viz.js/releases/download/v2.1.2/full.render.js"></script>
-      |};
+        <script src="%s/static/viz.js/v2.1.2/viz.js"></script>
+        <script src="%s/static/viz.js/v2.1.2/full.render.js"></script>
+      |}
+      rev_path rev_path;
   fpf fmt {|
       </head>
       <body>
@@ -75,7 +82,7 @@ let pp_viz fmt file =
     id id id id file id id id id id id id
 
 let with_formatter_to_file path f =
-  let path = Filename.concat_l path in
+  let path = Filename.(concat !Config.report (concat_l path)) in
   ensure_existence (Filename.dirname path);
   let ochan = open_out path in
   let fmt = Format.formatter_of_out_channel ochan in
@@ -85,8 +92,9 @@ let with_formatter_to_file path f =
   y
 
 let with_formatter_to_html_report ~title ?highlight ?viz path f =
+  let rev_path = path |> List.tl |> List.map (fun _ -> "..") |> List.cons "." |> String.concat "/" in
   with_formatter_to_file path @@ fun fmt ->
-  pp_header ~title ?highlight ?viz fmt ();
+  pp_header ~title ?highlight ?viz ~rev_path fmt ();
   let y = f fmt in
   pp_footer fmt ();
   y

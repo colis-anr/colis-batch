@@ -11,25 +11,25 @@ let pp_packages ?(anti_prefix=".") fmt packages =
     packages;
   fpf fmt "</ul>"
 
-let gaw_packages ~prefix packages =
+let gaw_packages packages =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Packages"
-    [prefix; "packages.html"]
+    ["packages.html"]
   @@ fun fmt ->
   pp_packages fmt packages
 
-let gaw_packages_accepted ~prefix packages =
+let gaw_packages_accepted packages =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Packages Accepted by Parsing"
-    [prefix; "parsing"; "packages-accepted.html"]
+    ["parsing"; "packages-accepted.html"]
   @@ fun fmt ->
   pp_packages ~anti_prefix:".." fmt packages
 
-let gaw_packages_rejected ~prefix packages =
+let gaw_packages_rejected packages =
   let packages = List.filter (fun pkg -> not (Colis_package.Package.are_all_maintscripts_ok pkg)) packages in
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Packages Rejected by Parsing"
-    [prefix; "parsing"; "packages-rejected.html"]
+    ["parsing"; "packages-rejected.html"]
   @@ fun fmt ->
   pp_packages ~anti_prefix:".." fmt packages
 
@@ -47,17 +47,17 @@ let pp_scripts ?(anti_prefix=".") fmt scripts =
     scripts;
   fpf fmt "</ul>"
 
-let gaw_scripts ~prefix scripts =
+let gaw_scripts scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts"
-    [prefix; "scripts.html"]
+    ["scripts.html"]
   @@ fun fmt ->
   pp_scripts fmt scripts
 
-let gaw_scripts_parsing_rejected ~prefix scripts =
+let gaw_scripts_parsing_rejected scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts Rejected by Parsing"
-    [prefix; "parsing"; "scripts-parsing-rejected.html"]
+    ["parsing"; "scripts-parsing-rejected.html"]
   @@ fun fmt ->
   pp_scripts ~anti_prefix:".." fmt scripts
 
@@ -85,10 +85,10 @@ let pp_scripts_by_error fmt extract_error scripts =
        pp_scripts ~anti_prefix:".." fmt scripts)
     scripts_by_error
 
-let gaw_scripts_parsing_errored ~prefix scripts =
+let gaw_scripts_parsing_errored scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts with Error in Parsing"
-    [prefix; "parsing"; "scripts-parsing-errored.html"]
+    ["parsing"; "scripts-parsing-errored.html"]
   @@ fun fmt ->
   fpf fmt "<h2>By Error</h2>";
   pp_scripts_by_error
@@ -101,10 +101,10 @@ let gaw_scripts_parsing_errored ~prefix scripts =
   fpf fmt "<h2>All</h2>";
   pp_scripts ~anti_prefix:".." fmt scripts
 
-let gaw_scripts_conversion_rejected ~prefix scripts =
+let gaw_scripts_conversion_rejected scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts Rejected by Conversion"
-    [prefix; "parsing"; "scripts-conversion-rejected.html"]
+    ["parsing"; "scripts-conversion-rejected.html"]
   @@ fun fmt ->
   fpf fmt "<h2>By Error</h2>";
   pp_scripts_by_error
@@ -117,10 +117,10 @@ let gaw_scripts_conversion_rejected ~prefix scripts =
   fpf fmt "<h2>All</h2>";
   pp_scripts ~anti_prefix:".." fmt scripts
 
-let gaw_scripts_conversion_errored ~prefix scripts =
+let gaw_scripts_conversion_errored scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts with Error in Conversion"
-    [prefix; "parsing"; "scripts-conversion-errored.html"]
+    ["parsing"; "scripts-conversion-errored.html"]
   @@ fun fmt ->
   fpf fmt "<h2>By Error</h2>";
   pp_scripts_by_error
@@ -133,25 +133,25 @@ let gaw_scripts_conversion_errored ~prefix scripts =
   fpf fmt "<h2>All</h2>";
   pp_scripts ~anti_prefix:".." fmt scripts
 
-let gaw_scripts_accepted ~prefix scripts =
+let gaw_scripts_accepted scripts =
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scripts Accepted by Parsing"
-    [prefix; "parsing"; "scripts-accepted.html"]
+    ["parsing"; "scripts-accepted.html"]
   @@ fun fmt ->
   pp_scripts ~anti_prefix:".." fmt scripts
 
-let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
+let generate_and_write_for_scenario name packages_and_scenarii =
   let scenario = List.assoc name Colis_package.Scenarii.all in
   (
     Colis_common.Report.with_formatter_to_file
-      [prefix; "scenario"; Colis_package.Scenarii.Name.to_string name; "flowchart.dot"]
+      ["scenario"; Colis_package.Scenarii.Name.to_string name; "flowchart.dot"]
     @@ fun fmt ->
     Colis_package.Scenario.pp_clean_as_dot fmt scenario
   );
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Scenario Report"
     ~viz:true
-    [prefix; "scenario"; Colis_package.Scenarii.Name.to_string name; "index.html"]
+    ["scenario"; Colis_package.Scenarii.Name.to_string name; "index.html"]
   @@ fun fmt ->
   Colis_common.Report.pp_viz fmt "flowchart.dot";
   let all_status = Colis_package.Scenario.all_status scenario in
@@ -214,7 +214,7 @@ let generate_and_write_for_scenario ~prefix name packages_and_scenarii =
     )
     all_status
 
-let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
+let gaw_pp_parsing fmt packages_and_scenarii =
   let packages = List.map fst packages_and_scenarii in
   let (packages_accepted, packages_rejected) =
     List.partition Colis_package.Package.are_all_maintscripts_ok packages
@@ -275,23 +275,24 @@ let gaw_pp_parsing fmt ~prefix packages_and_scenarii =
     (List.length scripts) (List.length scripts_parsing_errored) (List.length scripts_parsing_rejected)
     (List.length scripts_conversion_errored) (List.length scripts_conversion_rejected) (List.length scripts_accepted);
 
-  gaw_packages ~prefix packages;
-  gaw_packages_accepted ~prefix packages_accepted;
-  gaw_packages_rejected ~prefix packages_rejected;
+  gaw_packages packages;
+  gaw_packages_accepted packages_accepted;
+  gaw_packages_rejected packages_rejected;
 
-  gaw_scripts ~prefix scripts;
-  gaw_scripts_parsing_rejected ~prefix scripts_parsing_rejected;
-  gaw_scripts_parsing_errored ~prefix scripts_parsing_errored;
-  gaw_scripts_conversion_rejected ~prefix scripts_conversion_rejected;
-  gaw_scripts_conversion_errored ~prefix scripts_conversion_errored;
-  gaw_scripts_accepted ~prefix scripts_accepted
+  gaw_scripts scripts;
+  gaw_scripts_parsing_rejected scripts_parsing_rejected;
+  gaw_scripts_parsing_errored scripts_parsing_errored;
+  gaw_scripts_conversion_rejected scripts_conversion_rejected;
+  gaw_scripts_conversion_errored scripts_conversion_errored;
+  gaw_scripts_accepted scripts_accepted
 
-let generate_and_write ~prefix ~time packages_and_scenarii =
+let generate_and_write ~time packages_and_scenarii =
+  Colis_common.Report.copy_static_to ["static"];
 
   Colis_common.Report.with_formatter_to_html_report
     ~title:"Home"
     ~viz:true
-    [prefix; "index.html"]
+    ["index.html"]
   @@ fun fmt ->
 
   fpf fmt {|
@@ -312,7 +313,7 @@ let generate_and_write ~prefix ~time packages_and_scenarii =
   |}
     (floor (0.5 +. time));
 
-  gaw_pp_parsing fmt ~prefix packages_and_scenarii;
+  gaw_pp_parsing fmt packages_and_scenarii;
 
   fpf fmt "<h2>Scenarii</h2>";
   (
@@ -324,6 +325,6 @@ let generate_and_write ~prefix ~time packages_and_scenarii =
            (Filename.concat_l ["scenario"; Colis_package.Scenarii.Name.to_string name; "flowchart.dot"])
            (Colis_package.Scenarii.Name.to_string name);
 
-         generate_and_write_for_scenario ~prefix name packages_and_scenarii)
+         generate_and_write_for_scenario name packages_and_scenarii)
       Colis_package.Scenarii.all
   );
