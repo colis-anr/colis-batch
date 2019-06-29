@@ -55,38 +55,35 @@ let pp_scenarii_summaries fmt scenarii =
   fpf fmt "<h2>Scenarii</h2>";
   if List.length scenarii > 0 then
     List.iter
-      (fun (name, _) ->
-         fpf fmt "<div><h3>%s</h3>" (Scenarii.Name.to_fancy_string name);
+      (fun (name, scenario) ->
+         fpf fmt "<div style=\"clear: left;\"><h3>%s</h3>" (Scenarii.Name.to_fancy_string name);
          let name = Scenarii.Name.to_string name in
-         pp_viz fmt ~id:name
+
+         fpf fmt "<div style=\"float: left;\">%a</div>"
+           (pp_viz ~id:name)
            (Filename.concat_l ["scenario"; name; "flowchart.dot"]);
-         fpf fmt "<a href=\"%s\">Details</a></div>"
-           (Filename.concat_l ["scenario"; name; "index.html"]))
+
+         List.iter
+           (fun (status, states) ->
+              let status = Scenario.Status.to_string status in
+              fpf fmt "<h4>%s</h4>" status;
+              List.iteri
+                (fun id _ ->
+                   if id < nb_states_to_report then
+                     (
+                       let id = string_of_int id in
+                       fpf fmt "<a href=\"%s\">%s</a> "
+                         (Filename.concat_l ["scenario"; name; status; id ^ ".html"])
+                         id
+                     )
+                   else if id = nb_states_to_report then
+                     fpf fmt "... and %d more." (List.length states - nb_states_to_report)
+                )
+                states)
+           (Scenario.states scenario))
       scenarii
   else
     fpf fmt "<div><p>No scenario could be run.</p></div>"
-
-let pp_scenario fmt ran =
-  pp_viz fmt "flowchart.dot";
-  List.iter
-    (fun (status, states) ->
-       let status = Scenario.Status.to_string status in
-       fpf fmt "<h2>%s</h2>" status;
-       List.iteri
-         (fun id _ ->
-            if id < nb_states_to_report then
-              (
-                let id = string_of_int id in
-                fpf fmt "<a href=\"%s\">%s</a> "
-                  (Filename.concat_l [status; id ^ ".html"])
-                  id
-              )
-            else if id = nb_states_to_report then
-              fpf fmt "... and %d more." (List.length states - nb_states_to_report)
-         )
-         states)
-    (Scenario.states ran);
-  fpf fmt "</dl>"
 
 let generate_and_write ?(prefix=[]) ~copy_static package scenarii =
   if copy_static then
@@ -151,14 +148,6 @@ let generate_and_write ?(prefix=[]) ~copy_static package scenarii =
 
   List.iter
     (fun (name, scenario) ->
-       (
-         Colis_common.Report.with_formatter_to_html_report
-           ~title:(spf "%s – %s" (Package.name package) (Scenarii.Name.to_fancy_string name))
-           ~viz:true
-           (prefix @ ["scenario"; Scenarii.Name.to_string name; "index.html"])
-         @@ fun fmt ->
-         pp_scenario fmt scenario
-       );
        (
          Colis_common.Report.with_formatter_to_file
            (prefix @ ["scenario"; Scenarii.Name.to_string name; "flowchart.dot"])
