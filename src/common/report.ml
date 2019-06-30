@@ -13,17 +13,10 @@ let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
         <title>%s</title>
 
         <meta charset="utf-8" />
-        <style type="text/css">
-          body { width: 80%%; margin: auto; }
-          .hidden { display: none; }
-          .accepted { background: #afa; }
-          .rejected { background: #aaf; }
-          .errored  { background: #faa; }
-          .empty    { background: #ddd; }
-          pre { max-width: 100%%; overflow: auto; }
-        </style>
+        <link rel="stylesheet" type="text/css" href="%s/static/reset.css">
+        <link rel="stylesheet" type="text/css" href="%s/static/style.css">
     |}
-    title;
+    title rev_path rev_path;
   if highlight then
     fpf fmt {|
         <link rel="stylesheet" href="%s/static/highlight.js/9.14.2/styles/github.min.css">
@@ -44,12 +37,30 @@ let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
   fpf fmt {|
       </head>
       <body>
-        <h1>%s</h1>
+        <header>
+          <div class="content">
+            <h1>%s</h1>
+          </div>
+        </header>
+        <div class="content">
     |}
     title
 
 let pp_footer fmt () =
-  fpf fmt "</body></html>"
+  fpf fmt {|
+        </div>
+        <footer>
+          <div class="content">
+            <a href="http://colis.irif.fr">
+              ANR Project CoLiS<br/>
+              Correctness of Linux Scripts<br/>
+              ANR-15-CE25-0001,1/10/2015 - 30/9/2020
+            </a>
+          </div>
+        </footer>
+      </body>
+    </html>
+  |}
 
 let ensure_existence path =
   if Sys.command (spf "mkdir -p %S" path) <> 0 then

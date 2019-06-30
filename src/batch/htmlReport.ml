@@ -184,14 +184,15 @@ let generate_and_write_for_scenario name packages_and_scenarii =
     ~viz:true
     ["scenario"; Colis_package.Scenarii.Name.to_string name; "index.html"]
   @@ fun fmt ->
-  Colis_common.Report.pp_viz fmt "flowchart.dot";
+  fpf fmt "<div style=\"margin: auto;\">%a</div>"
+    Colis_common.Report.pp_viz "flowchart.dot";
   let all_status = Colis_package.Scenario.all_status scenario in
   fpf fmt "<h2>Summary</h2><ul>";
   pp_summary fmt name packages_and_scenarii all_status;
   fpf fmt "</ul>";
   List.iter
     (fun status ->
-       fpf fmt "<h2 id=\"%a\">%a</h2>"
+       fpf fmt "<h2 id=\"%a\">%a</h2><ul>"
          Colis_package.Scenario.Status.pp status
          Colis_package.Scenario.Status.pp status;
        (* For each status, we list all the packages that, for the same scenario
@@ -207,14 +208,15 @@ let generate_and_write_for_scenario name packages_and_scenarii =
                           if status' = status && states <> 0 then
                             fpf fmt "<li><a href=\"../../package/%s/index.html\">%s</a></li>"
                               (Colis_package.Package.safe_name package)
-                              (Colis_package.Package.safe_name package)
+                              (Colis_package.Package.name package)
                        )
                        states
                    )
               )
               scenarii
          )
-         packages_and_scenarii
+         packages_and_scenarii;
+       fpf fmt "</ul>"
     )
     all_status
 

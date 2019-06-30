@@ -1,0 +1,76 @@
+/************************** [ General Style ] *********************************/
+
+body {
+  line-height: 1.5;
+  font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console", Terminal, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: #960010;
+  text-decoration: none;
+  text-shadow: 0 0 1px rgba(150, 0, 0, 0.3);
+}
+
+a:hover {
+  color: rgb(255,0,0);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 20px;
+  font-weight: bolder;
+}
+h1 { font-size: 2.0rem; }
+h2 { font-size: 1.7rem; }
+h3 { font-size: 1.4rem; }
+h4 { font-size: 1.1rem; }
+
+ul {
+  list-style-type: square;
+  padding-left: 1.8rem;
+}
+
+/******************************* [ Layout ] ***********************************/
+
+.content {
+  width: 80%;
+  max-width: 800px;
+  margin: auto;
+}
+
+header, footer {
+  background: #960010;
+  color: white;
+  clear: both;
+}
+
+header {
+  margin-bottom: 20px;
+}
+
+footer {
+  margin-top: 20px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+header a, footer a {
+  color: white;
+}
+
+header .content, footer .content {
+  padding: 20px 0;
+  text-align: center;
+}
+
+/***************************** [ Specifics ] **********************************/
+
+.hidden { display: none; }
+.accepted { background: #afa; }
+.rejected { background: #aaf; }
+.errored  { background: #faa; }
+.empty    { background: #ddd; }
+pre { max-width: 100%%; overflow: auto; }
