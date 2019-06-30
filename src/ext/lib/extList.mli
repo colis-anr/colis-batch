@@ -9,3 +9,6 @@ val map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val flat_map : ('a -> 'b list) -> 'a list -> 'b list
 
 val sub : int -> int -> 'a list -> 'a list
+
+val ft_opt : 'a list -> 'a option
+(** Returns the last element of a list, or [None] if the list is empty. *)

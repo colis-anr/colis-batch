@@ -5,10 +5,9 @@ val with_formatter_to_file :
   (Format.formatter -> 'a) -> 'a
 
 val with_formatter_to_html_report :
-  title:string ->
   ?highlight:bool ->
   ?viz:bool ->
-  string list ->
+  (string * string list) list ->
   (Format.formatter -> 'a) -> 'a
 
 val copy_static_to : string list -> unit

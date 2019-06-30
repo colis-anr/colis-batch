@@ -51,6 +51,7 @@ header {
 
 footer {
   margin-top: 20px;
+  text-align: center;
 }
 
 header h1 {
@@ -63,7 +64,6 @@ header a, footer a {
 
 header .content, footer .content {
   padding: 20px 0;
-  text-align: center;
 }
 
 /***************************** [ Specifics ] **********************************/

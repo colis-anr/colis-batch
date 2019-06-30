@@ -43,7 +43,7 @@ let handle_package path =
     |> List.map_filter Fun.id
   in
   Colis_package.generate_and_write_html_report
-    ~prefix:["package"; Colis_package.Package.safe_name package]
+    ~prefix:[Colis_package.Package.name package, ["package"; Colis_package.Package.safe_name package]]
     ~copy_static:false
     package scenarii;
   (* We don't need the scenario nor the states for the general report, so we

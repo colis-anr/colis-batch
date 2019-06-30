@@ -1,11 +1,54 @@
 open Colis_ext
 
-let copy_static_to path =
-  assert (0 = Sys.command (spf "cp -R %S/static %S/%S"
-                             !Config.share
-                             !Config.report (String.concat "/" path)))
+let add_index_html_if_not_there path =
+  match List.ft_opt path with
+  | None -> ["index.html"]
+  | Some s ->
+    if String.endswith ".html" s
+    then path
+    else path @ ["index.html"]
 
-let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
+let path_from_title_and_path ?(html_sensible=true) title_and_path =
+  let path = title_and_path |> List.map snd |> List.concat in
+  (* Add index.html at the end of the path if it is not already a .html path. *)
+  if html_sensible then
+    add_index_html_if_not_there path
+  else
+    path
+
+let title_sep = " > "
+
+let raw_title_from_title_and_path title_and_path =
+  title_and_path |> List.map fst |> List.cons "Report" |> String.concat title_sep
+
+let rev_path_from_title_and_path title_and_path =
+  title_and_path
+  |> path_from_title_and_path
+  |> List.tl |> List.map (fun _ -> "..") |> List.cons "." |> String.concat "/"
+
+let clever_title_from_title_and_path title_and_path =
+  let rev_path = rev_path_from_title_and_path title_and_path in
+  title_and_path
+  |> List.fold_left
+    (fun (full_title, full_path) (title, path) ->
+       let full_path_w_index = add_index_html_if_not_there (full_path @ path) in
+       (full_title ^ title_sep
+        ^ spf "<a href=\"%s/%s\">%s</a>"
+          rev_path (String.concat "/" full_path_w_index) title,
+        full_path @ path))
+    (spf "<a href=\"%s/index.html\">Report</a>" rev_path, [])
+  |> fst
+
+let copy_static_to path =
+  let cmd =
+    spf "cp -R %S/static %S/%S"
+      !Config.share
+      !Config.report (String.concat "/" path)
+  in
+  assert (0 = Sys.command cmd)
+
+let pp_header ?(highlight=false) ?(viz=false) title_and_path fmt () =
+  let rev_path = rev_path_from_title_and_path title_and_path in
   fpf fmt {|
     <!DOCTYPE html>
     <html>
@@ -16,7 +59,7 @@ let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
         <link rel="stylesheet" type="text/css" href="%s/static/reset.css">
         <link rel="stylesheet" type="text/css" href="%s/static/style.css">
     |}
-    title rev_path rev_path;
+    (raw_title_from_title_and_path title_and_path) rev_path rev_path;
   if highlight then
     fpf fmt {|
         <link rel="stylesheet" href="%s/static/highlight.js/9.14.2/styles/github.min.css">
@@ -44,7 +87,7 @@ let pp_header ~title ?(highlight=false) ?(viz=false) ~rev_path fmt () =
         </header>
         <div class="content">
     |}
-    title
+    (clever_title_from_title_and_path title_and_path)
 
 let pp_footer fmt () =
   fpf fmt {|
@@ -54,7 +97,8 @@ let pp_footer fmt () =
             <a href="http://colis.irif.fr">
               ANR Project CoLiS<br/>
               Correctness of Linux Scripts<br/>
-              ANR-15-CE25-0001,1/10/2015 - 30/9/2020
+              ANR-15-CE25-0001<br/>
+              1/10/2015 - 30/9/2020
             </a>
           </div>
         </footer>
@@ -102,10 +146,10 @@ let with_formatter_to_file path f =
   close_out ochan;
   y
 
-let with_formatter_to_html_report ~title ?highlight ?viz path f =
-  let rev_path = path |> List.tl |> List.map (fun _ -> "..") |> List.cons "." |> String.concat "/" in
+let with_formatter_to_html_report ?highlight ?viz (title_and_path : (string * string list) list) f =
+  let path = path_from_title_and_path title_and_path in
   with_formatter_to_file path @@ fun fmt ->
-  pp_header ~title ?highlight ?viz ~rev_path fmt ();
+  pp_header ?highlight ?viz title_and_path fmt ();
   let y = f fmt in
   pp_footer fmt ();
   y
