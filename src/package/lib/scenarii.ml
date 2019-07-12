@@ -1,3 +1,4 @@
+open Colis_ext
 open Scenario
 
 module Name = struct
@@ -5,16 +6,25 @@ module Name = struct
     | Install
     | Removal
     | RemovalPurge
+    | Idempotency of Maintscript.Key.t * string list
 
   let to_string = function
     | Install -> "install"
     | Removal -> "removal"
     | RemovalPurge -> "removal_purge"
+    | Idempotency (key, args) ->
+      aspf "id_%a_%a"
+        Maintscript.Key.pp key
+        Format.(pp_print_list ~pp_sep:(fun fmt () -> fpf fmt "_") pp_print_string) args
 
   let to_fancy_string = function
     | Install -> "Installation"
     | Removal -> "Removal"
     | RemovalPurge -> "Removal and Purge"
+    | Idempotency (key, args) ->
+      aspf "Idempotency of %a %a"
+        Maintscript.Key.pp key
+        Format.(pp_print_list ~pp_sep:(fun fmt () -> fpf fmt " ") pp_print_string) args
 end
 
 let install = (* FIXME: unpack *)
@@ -73,9 +83,33 @@ let removal_purge =
         ~on_error:(status FailedConfig)
     )
 
+let idempotency key args =
+  run_script
+    key ~args
+    ~on_success:
+      (
+        run_script
+          key ~args
+          ~on_success:(status OSEF)
+          ~on_error:(status NonIdempotent)
+      )
+    ~on_error:
+      (
+        run_script
+          key ~args
+          ~on_success:(status NonIdempotent)
+          ~on_error:(status OSEF)
+      )
+
 let all =
   Name.[
     Install, install ;
     Removal, removal ;
-    RemovalPurge, removal_purge
+    RemovalPurge, removal_purge ;
+    Idempotency (Maintscript.Key.Preinst, ["install"]), idempotency Maintscript.Key.Preinst ["install"] ;
+    Idempotency (Maintscript.Key.Postinst, ["configure"]), idempotency Maintscript.Key.Postinst ["configure"] ;
+    Idempotency (Maintscript.Key.Postinst, ["abort-remove"]), idempotency Maintscript.Key.Postinst ["abort-remove"] ;
+    Idempotency (Maintscript.Key.Prerm, ["remove"]), idempotency Maintscript.Key.Prerm ["remove"] ;
+    Idempotency (Maintscript.Key.Postrm, ["install"]), idempotency Maintscript.Key.Postrm ["install"] ;
+    Idempotency (Maintscript.Key.Postrm, ["purge"]), idempotency Maintscript.Key.Postrm ["purge"] ;
   ]

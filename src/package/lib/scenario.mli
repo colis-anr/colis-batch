@@ -6,6 +6,8 @@ module Status : sig
     | HalfInstalled
     | ConfigFiles
     | Unpacked
+    | OSEF
+    | NonIdempotent
 
   val to_string : t -> string
   val pp : Format.formatter -> t -> unit

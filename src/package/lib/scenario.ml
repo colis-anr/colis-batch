@@ -8,6 +8,8 @@ module Status = struct
     | HalfInstalled
     | ConfigFiles
     | Unpacked
+    | OSEF
+    | NonIdempotent
 
   let to_string = function
     | Installed -> "Installed"
@@ -16,6 +18,8 @@ module Status = struct
     | HalfInstalled -> "Half-Installed"
     | ConfigFiles -> "Config-Files"
     | Unpacked -> "Unpacked"
+    | OSEF -> "OSEF"
+    | NonIdempotent -> "Non-Idempotent"
 
   let pp fmt status =
     fpf fmt "%s" (to_string status)

@@ -4,6 +4,8 @@ module Key : sig
   type t = Preinst | Postinst | Prerm | Postrm
 
   val to_string : t -> string
+  val pp : Format.formatter -> t -> unit
+
   val from_string : string -> t option
   val from_string_exn : string -> t
   (** Same as [t_from_string] except it raises an exception. *)

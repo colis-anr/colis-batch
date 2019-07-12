@@ -1,3 +1,5 @@
+open Colis_ext
+
 module Key = struct
   type t = Preinst | Postinst | Prerm | Postrm
 
@@ -6,6 +8,9 @@ module Key = struct
     | Postinst -> "postinst"
     | Prerm -> "prerm"
     | Postrm -> "postrm"
+
+  let pp fmt s =
+    fpf fmt "%s" (to_string s)
 
   let from_string = function
     | "preinst" -> Some Preinst
