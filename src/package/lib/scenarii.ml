@@ -110,6 +110,6 @@ let all =
     Idempotency (Maintscript.Key.Postinst, ["configure"]), idempotency Maintscript.Key.Postinst ["configure"] ;
     Idempotency (Maintscript.Key.Postinst, ["abort-remove"]), idempotency Maintscript.Key.Postinst ["abort-remove"] ;
     Idempotency (Maintscript.Key.Prerm, ["remove"]), idempotency Maintscript.Key.Prerm ["remove"] ;
-    Idempotency (Maintscript.Key.Postrm, ["install"]), idempotency Maintscript.Key.Postrm ["install"] ;
+    Idempotency (Maintscript.Key.Postrm, ["remove"]), idempotency Maintscript.Key.Postrm ["remove"] ;
     Idempotency (Maintscript.Key.Postrm, ["purge"]), idempotency Maintscript.Key.Postrm ["purge"] ;
   ]
