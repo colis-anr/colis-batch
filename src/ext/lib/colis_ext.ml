@@ -4,6 +4,7 @@ include ExtPervasives
 module Filename = ExtFilename
 module List = ExtList
 module String = ExtString
+module Unix = ExtUnix
 
 (* New modules *)
 

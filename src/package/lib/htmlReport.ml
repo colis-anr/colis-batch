@@ -87,7 +87,7 @@ let pp_scenarii_summaries fmt scenarii =
   else
     fpf fmt "<div><p>No scenario could be run.</p></div>"
 
-let generate_and_write ?prefix ~copy_static package scenarii =
+let generate_and_write ~start_time ~end_time ?prefix ~copy_static package scenarii =
   let prefix =
     match prefix with
     | None -> [Package.name package, []]
@@ -97,6 +97,19 @@ let generate_and_write ?prefix ~copy_static package scenarii =
     Colis_common.Report.with_formatter_to_html_report
       ~viz:true prefix
     @@ fun fmt ->
+
+    fpf fmt {|
+      <h2>Meta</h2>
+      <dl>
+        <dt>Start time</dt><dd>%a</dd>
+        <dt>End time</dt><dd>%a</dd>
+        <dt>Duration</dt><dd>%.0fs</dd>
+      </dl>
+    |}
+      Unix.pp_time start_time
+      Unix.pp_time end_time
+      (floor (0.5 +. end_time -. start_time));
+    
     pp_parsing_status fmt package;
     pp_scenarii_summaries fmt scenarii
   );

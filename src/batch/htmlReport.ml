@@ -282,7 +282,7 @@ let gaw_pp_parsing fmt packages_and_scenarii =
   gaw_scripts_conversion_errored scripts_conversion_errored;
   gaw_scripts_accepted scripts_accepted
 
-let generate_and_write ~time packages_and_scenarii =
+let generate_and_write ~start_time ~end_time packages_and_scenarii =
   Colis_common.Report.copy_static_to ["static"];
 
   Colis_common.Report.with_formatter_to_html_report
@@ -303,10 +303,14 @@ let generate_and_write ~time packages_and_scenarii =
   fpf fmt {|
     <h2>Meta</h2>
     <dl>
-      <dt>Total time</dt><dd>%.0fs</dd>
+      <dt>Start time</dt><dd>%a</dd>
+      <dt>End time</dt><dd>%a</dd>
+      <dt>Duration</dt><dd>%.0fs</dd>
     </dl>
   |}
-    (floor (0.5 +. time));
+    Unix.pp_time start_time
+    Unix.pp_time end_time
+    (floor (0.5 +. end_time -. start_time));
 
   gaw_pp_parsing fmt packages_and_scenarii;
 

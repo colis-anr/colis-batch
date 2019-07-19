@@ -27,6 +27,7 @@ let () =
 
 let () =
   let path = unwrap !Config.package in
+  let start_time = Unix.gettimeofday () in
   let package = Colis_package.parse_package path in
   let scenarii =
     Colis_package.map_all_scenarii
@@ -36,4 +37,5 @@ let () =
              ~package scenario in
          (name, ran))
   in
-  Colis_package.generate_and_write_html_report ~copy_static:true package scenarii
+  let end_time = Unix.gettimeofday () in
+  Colis_package.generate_and_write_html_report ~start_time ~end_time ~copy_static:true package scenarii

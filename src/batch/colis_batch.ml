@@ -29,6 +29,7 @@ let () =
 
 let handle_package path =
   epf "Handling package at %s.@." path;
+  let start_time = Unix.gettimeofday () in
   let package = Colis_package.parse_package path in
   let scenarii =
     Colis_package.map_all_scenarii
@@ -42,7 +43,9 @@ let handle_package path =
            Invalid_argument _ -> None)
     |> List.map_filter Fun.id
   in
+  let end_time = Unix.gettimeofday () in
   Colis_package.generate_and_write_html_report
+    ~start_time ~end_time
     ~prefix:[Colis_package.Package.name package, ["package"; Colis_package.Package.safe_name package]]
     ~copy_static:false
     package scenarii;
@@ -64,7 +67,7 @@ let handle_package path =
   (package, scenarii)
 
 let () =
-  let start = Unix.gettimeofday () in
+  let start_time = Unix.gettimeofday () in
   let packages_and_scenarii =
     !Config.corpus
     |> Sys.readdir |> Array.to_list
@@ -73,7 +76,7 @@ let () =
     |> MultiProcess.map_p ~workers:!Config.workers handle_package
     |> Lwt_main.run
   in
-  let end_ = Unix.gettimeofday () in
+  let end_time = Unix.gettimeofday () in
   HtmlReport.generate_and_write
-    ~time:(end_ -. start)
+    ~start_time ~end_time
     packages_and_scenarii
