@@ -58,7 +58,7 @@ let parse path =
         let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
         Ok shell
       with
-      | Colis.Errors.ConversionError msg -> Error (ConversionRejected msg)
+      | Colis.Internals.Errors.ConversionError msg -> Error (ConversionRejected msg)
       | exn -> Error (ConversionErrored (Printexc.to_string exn))
     with
     | Morsmall.SyntaxError _pos -> Error ParsingRejected
@@ -97,7 +97,7 @@ let interp ~cpu_timeout ~cmd_line_arguments ~states ~package_name m =
            ~arguments:cmd_line_arguments)
         states
     in
-    Constraints_common.Log.cpu_time_limit := Some (Sys.time () +. cpu_timeout);
+    Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
     Colis.Symbolic.interp_program
       ~loop_limit:200
       ~stack_size:200

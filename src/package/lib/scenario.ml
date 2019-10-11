@@ -107,14 +107,15 @@ type ran_leaf = Colis.Symbolic.Semantics.state list
 type ran_node =
   { incomplete : bool ;
     timeout : bool ;
+    oomemory : bool ;
     unsupported : (string * string) option ;
     unexpected : exn option }
 
 let make_ran_node
-    ?(incomplete=false) ?(timeout=false)
+    ?(incomplete=false) ?(timeout=false) ?(oomemory=false)
     ?unsupported ?unexpected
     ()
-  = { incomplete ; timeout ; unsupported ; unexpected }
+  = { incomplete ; timeout ; oomemory ; unsupported ; unexpected }
 
 type ran = (ran_leaf, ran_node) t
 
@@ -137,6 +138,8 @@ let pp_ran_as_dot ?name fmt sc =
       fpf fmt "<TR><TD>incomplete</TD></TR>";
     if dec.timeout then
       fpf fmt "<TR><TD>timeout</TD></TR>";
+    if dec.oomemory then
+      fpf fmt "<TR><TD>out of memory</TD></TR>";
     if dec.unsupported <> None then
       fpf fmt "<TR><TD>unsup. utility</TD></TR>";
     if dec.unexpected <> None then

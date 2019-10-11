@@ -4,6 +4,7 @@ let pp_arg_list = Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ")
 let def_contents = ["contents"]
 let def_corpus = "corpus"
 let def_cpu_timeout = 5.
+let def_memory_limit = "1G"
 let def_external_sources = "external_sources"
 let def_report = "report"
 let def_share = "share"
@@ -12,6 +13,7 @@ let def_workers = 2
 let contents = ref [] (* On purpose! *)
 let corpus = ref def_corpus
 let cpu_timeout = ref def_cpu_timeout
+let memory_limit = ref def_memory_limit
 let external_sources = ref def_external_sources
 let package = ref None
 let report = ref def_report
@@ -25,6 +27,7 @@ let speclist ~one_package =
     Arg.[
       "--contents",    String (add contents),  spf "FILES Sets the path to the contents file (default: %a)" pp_arg_list def_contents;
       "--cpu-timeout", Set_float  cpu_timeout, spf "NB Sets the CPU timeout, in seconds (default: %.0f)" def_cpu_timeout;
+      "--memory-limit", Set_string memory_limit, spf "NB Sets the memory limit, in bytes (default: %s)" def_memory_limit;
       "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" def_external_sources;
       "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" def_report;
       "--share",       Set_string share,       spf "DIR Sets the path to the share directory (default: %s)" def_share;

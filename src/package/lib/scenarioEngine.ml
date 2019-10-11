@@ -87,17 +87,19 @@ let run ~cpu_timeout ~package scenario =
           in
           (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
         with
-        | Colis.Errors.Unsupported (utility, msg) ->
+        | Colis.Internals.Errors.Unsupported (utility, msg) ->
           ([], [], make_ran_node ~unsupported:(utility, msg) ())
-        | Constraints_common.Log.CPU_time_limit_exceeded ->
+        | Colis.Internals.Errors.CpuTimeLimitExceeded ->
           ([], [], make_ran_node ~timeout:true ())
+        | Colis.Internals.Errors.MemoryLimitExceeded ->
+          ([], [], make_ran_node ~oomemory:true ())
         | exn ->
           ([], [], make_ran_node ~unexpected:exn ())
       in
       RunScript (ran_node, (script, cmd_line_arguments), run success on_success, run error on_error)
   in
-  let root = Constraints.Var.fresh ~hint:"r" () in
-  let disj = Colis.Symbolic.add_fs_spec_to_clause root Constraints.Clause.true_sat_conj fhs in
-  let disj = List.map Constraints.Clause.make_initial disj in
+  let root = Colis.Constraints.Var.fresh ~hint:"r" () in
+  let disj = Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs in
+  let disj = List.map Colis.Constraints.Clause.make_initial disj in
   let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
   run stas scenario

@@ -18,9 +18,10 @@ let () =
   (* FIXME: The following is super dirty and should be fixed in Colis-Language
      where the CPU timeout should be an option. And it's actually buggy because
      this will only consider the time from the beginning of all the execution. *)
-  Constraints_common.Log.cpu_time_limit := Some (!Config.cpu_timeout);
-  Colis.Options.external_sources := !Config.external_sources;
-  Colis.Options.fail_on_unknown_utilities := true
+  Colis.Internals.Options.cpu_time_limit := !Config.cpu_timeout;
+  Colis.Internals.Options.set_memory_limit !Config.memory_limit;
+  Colis.Internals.Options.external_sources := !Config.external_sources;
+  Colis.Internals.Options.fail_on_unknown_utilities := true
 
 let () =
   epf "Parsing contents table... @?";
