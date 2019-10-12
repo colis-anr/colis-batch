@@ -81,7 +81,7 @@ let colis m =
   | _ ->
     raise (Invalid_argument "Maintscript.colis")
 
-let interp ~cpu_timeout ~cmd_line_arguments ~states ~package_name m =
+let interp ~cmd_line_arguments ~states ~package_name m =
   match m.content with
   | Ok shell ->
     (* Assertion: it works because we have converted before (with other cmd line
@@ -97,7 +97,6 @@ let interp ~cpu_timeout ~cmd_line_arguments ~states ~package_name m =
            ~arguments:cmd_line_arguments)
         states
     in
-    Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
     Colis.Symbolic.interp_program
       ~loop_limit:200
       ~stack_size:200

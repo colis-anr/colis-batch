@@ -62,12 +62,11 @@ var/www"
     (fun fhs dir -> Colis.Symbolic.FilesystemSpec.add_dir dir fhs)
     Colis.Symbolic.FilesystemSpec.empty
 
-let run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script =
+let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
   | None -> (states, [], [])
   | Some script ->
     Maintscript.interp
-      ~cpu_timeout
       ~cmd_line_arguments
       ~states
       ~package_name:(Package.name package)
@@ -83,7 +82,7 @@ let run ~cpu_timeout ~package scenario =
       let (success, error, ran_node) =
         try
           let (success, error, incomplete) =
-            run_script ~cpu_timeout ~cmd_line_arguments ~states ~package ~script
+            run_script ~cmd_line_arguments ~states ~package ~script
           in
           (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
         with
@@ -98,6 +97,7 @@ let run ~cpu_timeout ~package scenario =
       in
       RunScript (ran_node, (script, cmd_line_arguments), run success on_success, run error on_error)
   in
+  Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
   let root = Colis.Constraints.Var.fresh ~hint:"r" () in
   let disj = Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs in
   let disj = List.map Colis.Constraints.Clause.make_initial disj in
