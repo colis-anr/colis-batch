@@ -82,27 +82,35 @@ let run ~cpu_timeout ~package scenario =
     match scenario with
     | Status ((), status) -> Status (states, status)
     | Unpack ((), on_success) ->
-      Unpack (make_ran_node (), run states on_success) (* FIXME!!! *)
+      if states = [] then
+        Unpack (make_ran_node (), run [] on_success)
+      else
+        Unpack (make_ran_node (), run states on_success) (* FIXME!!! *)
     | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
-      let (success, error, ran_node) =
-        try
-          let (success, error, incomplete) =
-            run_script ~cmd_line_arguments ~states ~package ~script
-          in
-          (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
-        with
-        | Colis.Internals.Errors.Unsupported (utility, msg) ->
-          ([], [], make_ran_node ~unsupported:[utility, msg] ())
-        | Colis.Internals.Errors.CpuTimeLimitExceeded ->
-          ([], [], make_ran_node ~timeout:true ())
-        | Colis.Internals.Errors.MemoryLimitExceeded ->
-          ([], [], make_ran_node ~oomemory:true ())
-        | NotConverted ->
-          ([], [], make_ran_node ~notconverted:true ())
-        | exn ->
-          ([], [], make_ran_node ~unexpected:[exn] ())
-      in
-      RunScript (ran_node, (script, cmd_line_arguments), run success on_success, run error on_error)
+      if states = [] then
+        RunScript (make_ran_node (), (script, cmd_line_arguments),
+                   run [] on_success, run [] on_error)
+      else
+        let (success, error, ran_node) =
+          try
+            let (success, error, incomplete) =
+              run_script ~cmd_line_arguments ~states ~package ~script
+            in
+            (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
+          with
+          | Colis.Internals.Errors.Unsupported (utility, msg) ->
+            ([], [], make_ran_node ~unsupported:[utility, msg] ())
+          | Colis.Internals.Errors.CpuTimeLimitExceeded ->
+            ([], [], make_ran_node ~timeout:true ())
+          | Colis.Internals.Errors.MemoryLimitExceeded ->
+            ([], [], make_ran_node ~oomemory:true ())
+          | NotConverted ->
+            ([], [], make_ran_node ~notconverted:true ())
+          | exn ->
+            ([], [], make_ran_node ~unexpected:[exn] ())
+        in
+        RunScript (ran_node, (script, cmd_line_arguments),
+                   run success on_success, run error on_error)
   in
   Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
   let root = Colis.Constraints.Var.fresh ~hint:"r" () in
