@@ -45,13 +45,14 @@ type ran_leaf = Colis.Symbolic.Semantics.state list
 type ran_node
 
 val make_ran_node :
-  ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool ->
+  ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool -> ?notconverted:bool ->
   ?unsupported:(string * string) list -> ?unexpected:exn list ->
   unit -> ran_node
 
 val ran_node_incomplete : ran_node -> bool
 val ran_node_timeout : ran_node -> bool
 val ran_node_oomemory : ran_node -> bool
+val ran_node_not_converted : ran_node -> bool
 val ran_node_unsupported : ran_node -> bool
 val ran_node_unexpected : ran_node -> bool
 

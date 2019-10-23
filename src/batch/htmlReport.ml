@@ -326,6 +326,7 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
     let nb_incomplete = ref 0 in
     let nb_timeout = ref 0 in
     let nb_oomemory = ref 0 in
+    let nb_notconverted = ref 0 in
     let nb_unsupported = ref 0 in
     let nb_unexpected = ref 0 in
     List.iter
@@ -338,6 +339,7 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
                 if ran_node_incomplete r then incr nb_incomplete;
                 if ran_node_timeout r then incr nb_timeout;
                 if ran_node_oomemory r then incr nb_oomemory;
+                if ran_node_notconverted r then incr nb_notconverted;
                 if ran_node_unsupported r then incr nb_unsupported;
                 if ran_node_unexpected r then incr nb_unexpected
               | Partial r ->
@@ -345,6 +347,7 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
                 if ran_node_incomplete r then incr nb_incomplete;
                 if ran_node_timeout r then incr nb_timeout;
                 if ran_node_oomemory r then incr nb_oomemory;
+                if ran_node_notconverted r then incr nb_notconverted;
                 if ran_node_unsupported r then incr nb_unsupported;
                 if ran_node_unexpected r then incr nb_unexpected
               | Complete -> incr nb_complete)
@@ -352,7 +355,7 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
       packages_and_scenarii;
     let nb_problems =
       !nb_incomplete + !nb_timeout + !nb_oomemory
-      + !nb_unsupported + !nb_unexpected
+      + !nb_notconverted + !nb_unsupported + !nb_unexpected
     in
 
     fpf fmt "<p>";
@@ -361,8 +364,9 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
     fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially. "
       !nb_complete (percentage !nb_complete nb_scenarii)
       !nb_partial (percentage !nb_partial nb_scenarii);
-    fpf fmt "I counted %d problems: %d timeouts (%d%% of all problems), %d out of memory (%d%%), %d incompletness (%d%%), %d unsupported utilities (%d%%) and %d unexpected exceptions (%d%%). "
+    fpf fmt "I counted %d problems: %d scripts not converted (%d%% of all problems), %d timeouts (%d%%), %d out of memory (%d%%), %d incompletness (%d%%), %d unsupported utilities (%d%%) and %d unexpected exceptions (%d%%). "
       nb_problems
+      !nb_notconverted (percentage !nb_notconverted nb_problems)
       !nb_timeout (percentage !nb_timeout nb_problems)
       !nb_oomemory (percentage !nb_oomemory nb_problems)
       !nb_incomplete (percentage !nb_incomplete nb_problems)
