@@ -117,6 +117,10 @@ let make_ran_node
     ()
   = { incomplete ; timeout ; oomemory ; unsupported ; unexpected }
 
+let ran_node_had_problem r =
+  r.incomplete || r.timeout || r.oomemory
+  || r.unsupported <> None || r.unexpected <> None
+
 type ran = (ran_leaf, ran_node) t
 
 let states sc =
@@ -128,6 +132,27 @@ let states sc =
   states sc
   |> List.sort compare
   |> List.group compare
+
+type coverage = Complete | Partial | Null
+
+let merge_coverage a b =
+  match a, b with
+  | Null, Null -> Null
+  | Complete, Complete -> Complete
+  | _ -> Partial
+
+let rec coverage = function
+  | Status _ -> Complete
+  | Unpack (r, sc) ->
+    if ran_node_had_problem r then
+      Null
+    else
+      coverage sc
+  | RunScript (r, _, s1, s2) ->
+    if ran_node_had_problem r then
+      Null
+    else
+      merge_coverage (coverage s1) (coverage s2)
 
 let pp_ran_as_dot ?name fmt sc =
   let pp_leaf_decoration fmt states =
@@ -151,3 +176,22 @@ let pp_ran_as_dot ?name fmt sc =
 
 type ran_leaf_sum = int
 type ran_sum = (ran_leaf_sum, ran_node) t
+
+let summarize_ran_leaf = List.length
+
+let rec summarize = function
+  | Status (leaf, st) -> Status (summarize_ran_leaf leaf, st)
+  | Unpack (node, sc) -> Unpack (node, summarize sc)
+  | RunScript (node, script, sc1, sc2) ->
+    RunScript (node, script, summarize sc1, summarize sc2)
+
+let states_sum sc =
+  let rec states_sum = function
+    | Status (states, st) -> [st, states]
+    | Unpack (_, sc) -> states_sum sc
+    | RunScript (_, _, s1, s2) -> states_sum s1 @ states_sum s2
+  in
+  states_sum sc
+  |> List.sort compare
+  |> List.group compare
+  |> List.map (fun (sc, l) -> (sc, List.fold_left (+) 0 l))
