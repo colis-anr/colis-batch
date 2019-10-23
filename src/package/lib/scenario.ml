@@ -108,18 +108,24 @@ type ran_node =
   { incomplete : bool ;
     timeout : bool ;
     oomemory : bool ;
-    unsupported : (string * string) option ;
-    unexpected : exn option }
+    unsupported : (string * string) list ;
+    unexpected : exn list }
 
 let make_ran_node
     ?(incomplete=false) ?(timeout=false) ?(oomemory=false)
-    ?unsupported ?unexpected
+    ?(unsupported=[]) ?(unexpected=[])
     ()
   = { incomplete ; timeout ; oomemory ; unsupported ; unexpected }
 
+let ran_node_incomplete r = r.incomplete
+let ran_node_timeout r = r.timeout
+let ran_node_oomemory r = r.oomemory
+let ran_node_unsupported r = r.unsupported <> []
+let ran_node_unexpected r = r.unexpected <> []
+
 let ran_node_had_problem r =
-  r.incomplete || r.timeout || r.oomemory
-  || r.unsupported <> None || r.unexpected <> None
+  ran_node_incomplete r || ran_node_timeout r || ran_node_oomemory r
+  || ran_node_unsupported r || ran_node_unexpected r
 
 type ran = (ran_leaf, ran_node) t
 
@@ -133,24 +139,37 @@ let states sc =
   |> List.sort compare
   |> List.group compare
 
-type coverage = Complete | Partial | Null
+type coverage = Complete | Partial of ran_node | Null of ran_node
+
+let merge_ran_nodes a b =
+  { incomplete = a.incomplete || b.incomplete ;
+    timeout = a.timeout || b.timeout ;
+    oomemory = a.oomemory || b.oomemory ;
+    unsupported = a.unsupported @ b.unsupported ;
+    unexpected = a.unexpected @ b.unexpected }
 
 let merge_coverage a b =
   match a, b with
-  | Null, Null -> Null
+  | Null rn1, Null rn2 -> Null (merge_ran_nodes rn1 rn2)
+  | Null rn1, Partial rn2
+  | Partial rn1, Null rn2
+  | Partial rn1, Partial rn2 -> Partial (merge_ran_nodes rn1 rn2)
+  | Null rn, Complete
+  | Partial rn, Complete
+  | Complete, Null rn
+  | Complete, Partial rn -> Partial rn
   | Complete, Complete -> Complete
-  | _ -> Partial
 
 let rec coverage = function
   | Status _ -> Complete
   | Unpack (r, sc) ->
     if ran_node_had_problem r then
-      Null
+      Null r
     else
       coverage sc
   | RunScript (r, _, s1, s2) ->
     if ran_node_had_problem r then
-      Null
+      Null r
     else
       merge_coverage (coverage s1) (coverage s2)
 
@@ -165,9 +184,9 @@ let pp_ran_as_dot ?name fmt sc =
       fpf fmt "<TR><TD>timeout</TD></TR>";
     if dec.oomemory then
       fpf fmt "<TR><TD>out of memory</TD></TR>";
-    if dec.unsupported <> None then
+    if dec.unsupported <> [] then
       fpf fmt "<TR><TD>unsup. utility</TD></TR>";
-    if dec.unexpected <> None then
+    if dec.unexpected <> [] then
       fpf fmt "<TR><TD>unexpected exception</TD></TR>"
   in
   pp_as_dot ?name ~pp_leaf_decoration ~pp_node_decoration fmt sc

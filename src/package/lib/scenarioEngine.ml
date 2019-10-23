@@ -87,13 +87,13 @@ let run ~cpu_timeout ~package scenario =
           (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
         with
         | Colis.Internals.Errors.Unsupported (utility, msg) ->
-          ([], [], make_ran_node ~unsupported:(utility, msg) ())
+          ([], [], make_ran_node ~unsupported:[utility, msg] ())
         | Colis.Internals.Errors.CpuTimeLimitExceeded ->
           ([], [], make_ran_node ~timeout:true ())
         | Colis.Internals.Errors.MemoryLimitExceeded ->
           ([], [], make_ran_node ~oomemory:true ())
         | exn ->
-          ([], [], make_ran_node ~unexpected:exn ())
+          ([], [], make_ran_node ~unexpected:[exn] ())
       in
       RunScript (ran_node, (script, cmd_line_arguments), run success on_success, run error on_error)
   in
