@@ -2,31 +2,6 @@ open Colis_ext
 
 let nb_states_to_report = 100 (* FIXME: option *)
 
-let pp_viz fmt ?(id="noideafixme") file =
-  fpf fmt {|
-    <div id="viz-%s"></div>
-    <script>
-      var viz_client_%s = new XMLHttpRequest();
-      var viz_%s = new Viz();
-
-      viz_client_%s.open('GET', '%s');
-      viz_client_%s.onreadystatechange = function() {
-        if (viz_client_%s.readyState === 4){
-          viz_%s.renderSVGElement(viz_client_%s.responseText)
-            .then(function(element) {
-              document.getElementById('viz-%s').appendChild(element);
-            })
-            .catch(error => {
-              viz_%s = new Viz();
-              console.error(error);
-            });
-        }
-      }
-      viz_client_%s.send();
-    </script>
-  |}
-    id id id id file id id id id id id id
-
 let pp_parsing_status fmt package =
   fpf fmt "<h2>Parsing</h2>";
   fpf fmt "<dl>";
@@ -60,7 +35,7 @@ let pp_scenarii_summaries fmt scenarii =
          let name = Scenarii.Name.to_string name in
 
          fpf fmt "<div style=\"float: left;\">%a</div>"
-           (pp_viz ~id:name)
+           Colis_common.Report.pp_viz
            (Filename.concat_l ["scenario"; name; "flowchart.dot"]);
 
          List.iter
@@ -213,7 +188,7 @@ let generate_and_write ~start_time ~end_time ?prefix ~copy_static package scenar
                                Scenarii.Name.to_fancy_string name, ["scenario"; Scenarii.Name.to_string name];
                                status ^ " #" ^ id, [status; id ^ ".html"]])
                          @@ fun fmt ->
-                         pp_viz fmt (id ^ ".dot");
+                         Colis_common.Report.pp_viz fmt (id ^ ".dot");
                          let () =
                            let open Colis in
                            let open Symbolic.Semantics in
