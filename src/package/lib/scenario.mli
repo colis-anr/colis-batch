@@ -46,8 +46,14 @@ type ran_node
 
 val make_ran_node :
   ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool ->
-  ?unsupported:(string * string) -> ?unexpected:exn ->
+  ?unsupported:(string * string) list -> ?unexpected:exn list ->
   unit -> ran_node
+
+val ran_node_incomplete : ran_node -> bool
+val ran_node_timeout : ran_node -> bool
+val ran_node_oomemory : ran_node -> bool
+val ran_node_unsupported : ran_node -> bool
+val ran_node_unexpected : ran_node -> bool
 
 type ran = (ran_leaf, ran_node) t
 
@@ -66,5 +72,5 @@ val states_sum : ran_sum -> (Status.t * int) list
 
 (** {2 Ran Scenarios Coverage} *)
 
-type coverage = Complete | Partial | Null
+type coverage = Complete | Partial of ran_node | Null of ran_node
 val coverage : ('a, ran_node) t -> coverage

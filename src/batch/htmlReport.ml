@@ -318,28 +318,58 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
 
   fpf fmt "<h2>Scenarios</h2>";
 
-  let nb_packages = List.length packages_and_scenarii in
-  let nb_scenarii = nb_packages * List.length Colis_package.Scenarii.all in
-  let nb_complete = ref 0 in
-  let nb_partial = ref 0 in
-  List.iter
-    (fun (_package, scenarii) ->
-       List.iter
-         (fun (_name, scenario) ->
-            match Colis_package.Scenario.coverage scenario with
-            | Null -> ()
-            | Partial -> incr nb_partial
-            | Complete -> incr nb_complete)
-         scenarii)
-    packages_and_scenarii;
+  (
+    let nb_packages = List.length packages_and_scenarii in
+    let nb_scenarii = nb_packages * List.length Colis_package.Scenarii.all in
+    let nb_complete = ref 0 in
+    let nb_partial = ref 0 in
+    let nb_incomplete = ref 0 in
+    let nb_timeout = ref 0 in
+    let nb_oomemory = ref 0 in
+    let nb_unsupported = ref 0 in
+    let nb_unexpected = ref 0 in
+    List.iter
+      (fun (_package, scenarii) ->
+         List.iter
+           (fun (_name, scenario) ->
+              let open Colis_package.Scenario in
+              match coverage scenario with
+              | Null r ->
+                if ran_node_incomplete r then incr nb_incomplete;
+                if ran_node_timeout r then incr nb_timeout;
+                if ran_node_oomemory r then incr nb_oomemory;
+                if ran_node_unsupported r then incr nb_unsupported;
+                if ran_node_unexpected r then incr nb_unexpected
+              | Partial r ->
+                incr nb_partial;
+                if ran_node_incomplete r then incr nb_incomplete;
+                if ran_node_timeout r then incr nb_timeout;
+                if ran_node_oomemory r then incr nb_oomemory;
+                if ran_node_unsupported r then incr nb_unsupported;
+                if ran_node_unexpected r then incr nb_unexpected
+              | Complete -> incr nb_complete)
+           scenarii)
+      packages_and_scenarii;
+    let nb_problems =
+      !nb_incomplete + !nb_timeout + !nb_oomemory
+      + !nb_unsupported + !nb_unexpected
+    in
 
-  fpf fmt "<p>";
-  fpf fmt "In total, I attempted to run %d scenarios. (%d packages × %d scenarios)."
-    nb_scenarii nb_packages (List.length Colis_package.Scenarii.all);
-  fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially."
-    !nb_complete (percentage !nb_complete nb_scenarii)
-    !nb_partial (percentage !nb_partial nb_scenarii);
-  fpf fmt "</p>";
+    fpf fmt "<p>";
+    fpf fmt "In total, I attempted to run %d scenarios. (%d packages × %d scenarios). "
+      nb_scenarii nb_packages (List.length Colis_package.Scenarii.all);
+    fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially. "
+      !nb_complete (percentage !nb_complete nb_scenarii)
+      !nb_partial (percentage !nb_partial nb_scenarii);
+    fpf fmt "I counted %d problems: %d timeouts (%d%% of all problems), %d out of memory (%d%%), %d incompletness (%d%%), %d unsupported utilities (%d%%) and %d unexpected exceptions (%d%%). "
+      nb_problems
+      !nb_timeout (percentage !nb_timeout nb_problems)
+      !nb_oomemory (percentage !nb_oomemory nb_problems)
+      !nb_incomplete (percentage !nb_incomplete nb_problems)
+      !nb_unsupported (percentage !nb_unsupported nb_problems)
+      !nb_unexpected (percentage !nb_unexpected nb_problems);
+    fpf fmt "</p>"
+  );
 
   (
     List.iter
