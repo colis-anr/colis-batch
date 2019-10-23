@@ -358,21 +358,24 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
       + !nb_notconverted + !nb_unsupported + !nb_unexpected
     in
 
-    fpf fmt "<p>";
-    fpf fmt "In total, I attempted to run %d scenarios. (%d packages × %d scenarios). "
+    fpf fmt "<p>In total, I attempted to run %d scenarios. (%d packages × %d scenarios). "
       nb_scenarii nb_packages (List.length Colis_package.Scenarii.all);
     fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially. "
       !nb_complete (percentage !nb_complete nb_scenarii)
       !nb_partial (percentage !nb_partial nb_scenarii);
-    fpf fmt "I counted %d problems: %d scripts not converted (%d%% of all problems), %d timeouts (%d%%), %d out of memory (%d%%), %d incompletness (%d%%), %d unsupported utilities (%d%%) and %d unexpected exceptions (%d%%). "
-      nb_problems
-      !nb_notconverted (percentage !nb_notconverted nb_problems)
-      !nb_timeout (percentage !nb_timeout nb_problems)
-      !nb_oomemory (percentage !nb_oomemory nb_problems)
-      !nb_incomplete (percentage !nb_incomplete nb_problems)
-      !nb_unsupported (percentage !nb_unsupported nb_problems)
+    fpf fmt "I counted %d problems:<ul>" nb_problems;
+    fpf fmt "<li>%d scripts not converted (%d%% of all problems),</li>"
+      !nb_notconverted (percentage !nb_notconverted nb_problems);
+    fpf fmt "<li>%d timeouts (%d%%),</li>"
+      !nb_timeout (percentage !nb_timeout nb_problems);
+    fpf fmt "<li>%d out of memory (%d%%),</li>"
+      !nb_oomemory (percentage !nb_oomemory nb_problems);
+    fpf fmt "<li>%d incompletness (%d%%),</li>"
+      !nb_incomplete (percentage !nb_incomplete nb_problems);
+    fpf fmt "<li>%d unsupported utilities (%d%%),</li>"
+      !nb_unsupported (percentage !nb_unsupported nb_problems);
+    fpf fmt "<li>and %d unexpected exceptions (%d%%).</li></ul></p>"
       !nb_unexpected (percentage !nb_unexpected nb_problems);
-    fpf fmt "</p>"
   );
 
   (
