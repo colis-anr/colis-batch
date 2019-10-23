@@ -53,8 +53,10 @@ val ran_node_incomplete : ran_node -> bool
 val ran_node_timeout : ran_node -> bool
 val ran_node_oomemory : ran_node -> bool
 val ran_node_notconverted : ran_node -> bool
-val ran_node_unsupported : ran_node -> bool
-val ran_node_unexpected : ran_node -> bool
+val ran_node_unsupported : ran_node -> (string * string) list
+val ran_node_has_unsupported : ran_node -> bool
+val ran_node_unexpected : ran_node -> exn list
+val ran_node_has_unexpected : ran_node -> bool
 
 type ran = (ran_leaf, ran_node) t
 
