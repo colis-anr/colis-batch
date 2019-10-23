@@ -51,18 +51,11 @@ let handle_package path =
     ~copy_static:false
     package scenarii;
   (* We don't need the scenario nor the states for the general report, so we
-     only remember the number of states per status. This will save lots of
-     memory. *)
+     only remember their summary. *)
   let scenarii =
     List.map
       (fun (name, scenario) ->
-         let scenario =
-           List.map
-             (fun (status, states) ->
-                (status, List.length states))
-             (Colis_package.Scenario.states scenario)
-         in
-         (name, scenario))
+         (name, Colis_package.Scenario.summarize scenario))
       scenarii
   in
   (package, scenarii)

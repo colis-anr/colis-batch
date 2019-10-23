@@ -59,3 +59,12 @@ val pp_ran_as_dot : ?name:string -> Format.formatter -> ran -> unit
 
 type ran_leaf_sum = int
 type ran_sum = (ran_leaf_sum, ran_node) t
+
+val summarize : ran -> ran_sum
+
+val states_sum : ran_sum -> (Status.t * int) list
+
+(** {2 Ran Scenarios Coverage} *)
+
+type coverage = Complete | Partial | Null
+val coverage : ('a, ran_node) t -> coverage

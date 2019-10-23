@@ -1,5 +1,7 @@
 open Colis_ext
 
+let percentage a b = 100 * a / b (* FIXME *)
+
 let pp_packages ?(anti_prefix=".") fmt packages =
   fpf fmt "<ul>";
   List.iter
@@ -143,7 +145,7 @@ let pp_summary fmt ?(prefix="") name packages_and_scenarii all_status =
            List.iter
              (fun (_package, scenarii) ->
                 List.iter
-                  (fun (name', states) ->
+                  (fun (name', scenario) ->
                      if name' = name then
                        (
                          List.iter
@@ -151,7 +153,7 @@ let pp_summary fmt ?(prefix="") name packages_and_scenarii all_status =
                               if status' = status && states <> 0 then
                                 incr r
                            )
-                           states
+                           (Colis_package.Scenario.states_sum scenario)
                        )
                   )
                   scenarii
@@ -190,7 +192,7 @@ let generate_and_write_for_scenario name packages_and_scenarii =
        List.iter
          (fun (package, scenarii) ->
             List.iter
-              (fun (name', states) ->
+              (fun (name', scenario) ->
                  if name' = name then
                    (
                      List.iter
@@ -200,7 +202,7 @@ let generate_and_write_for_scenario name packages_and_scenarii =
                               (Colis_package.Package.safe_name package)
                               (Colis_package.Package.name package)
                        )
-                       states
+                       (Colis_package.Scenario.states_sum scenario)
                    )
               )
               scenarii
@@ -314,7 +316,31 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
 
   gaw_pp_parsing fmt packages_and_scenarii;
 
-  fpf fmt "<h2>Scenarii</h2>";
+  fpf fmt "<h2>Scenarios</h2>";
+
+  let nb_packages = List.length packages_and_scenarii in
+  let nb_scenarii = nb_packages * List.length Colis_package.Scenarii.all in
+  let nb_complete = ref 0 in
+  let nb_partial = ref 0 in
+  List.iter
+    (fun (_package, scenarii) ->
+       List.iter
+         (fun (_name, scenario) ->
+            match Colis_package.Scenario.coverage scenario with
+            | Null -> ()
+            | Partial -> incr nb_partial
+            | Complete -> incr nb_complete)
+         scenarii)
+    packages_and_scenarii;
+
+  fpf fmt "<p>";
+  fpf fmt "In total, I attempted to run %d scenarios. (%d packages × %d scenarios)."
+    nb_scenarii nb_packages (List.length Colis_package.Scenarii.all);
+  fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially."
+    !nb_complete (percentage !nb_complete nb_scenarii)
+    !nb_partial (percentage !nb_partial nb_scenarii);
+  fpf fmt "</p>";
+
   (
     List.iter
       (fun (name, scenario) ->
