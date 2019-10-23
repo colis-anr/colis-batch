@@ -52,7 +52,7 @@ val make_ran_node :
 val ran_node_incomplete : ran_node -> bool
 val ran_node_timeout : ran_node -> bool
 val ran_node_oomemory : ran_node -> bool
-val ran_node_not_converted : ran_node -> bool
+val ran_node_notconverted : ran_node -> bool
 val ran_node_unsupported : ran_node -> bool
 val ran_node_unexpected : ran_node -> bool
 
