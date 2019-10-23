@@ -108,24 +108,26 @@ type ran_node =
   { incomplete : bool ;
     timeout : bool ;
     oomemory : bool ;
+    notconverted : bool ;
     unsupported : (string * string) list ;
     unexpected : exn list }
 
 let make_ran_node
-    ?(incomplete=false) ?(timeout=false) ?(oomemory=false)
+    ?(incomplete=false) ?(timeout=false) ?(oomemory=false) ?(notconverted=false)
     ?(unsupported=[]) ?(unexpected=[])
     ()
-  = { incomplete ; timeout ; oomemory ; unsupported ; unexpected }
+  = { incomplete ; timeout ; oomemory ; notconverted ; unsupported ; unexpected }
 
 let ran_node_incomplete r = r.incomplete
 let ran_node_timeout r = r.timeout
 let ran_node_oomemory r = r.oomemory
+let ran_node_notconverted r = r.notconverted
 let ran_node_unsupported r = r.unsupported <> []
 let ran_node_unexpected r = r.unexpected <> []
 
 let ran_node_had_problem r =
   ran_node_incomplete r || ran_node_timeout r || ran_node_oomemory r
-  || ran_node_unsupported r || ran_node_unexpected r
+  || ran_node_notconverted r || ran_node_unsupported r || ran_node_unexpected r
 
 type ran = (ran_leaf, ran_node) t
 
@@ -145,6 +147,7 @@ let merge_ran_nodes a b =
   { incomplete = a.incomplete || b.incomplete ;
     timeout = a.timeout || b.timeout ;
     oomemory = a.oomemory || b.oomemory ;
+    notconverted = a.notconverted || b.notconverted ;
     unsupported = a.unsupported @ b.unsupported ;
     unexpected = a.unexpected @ b.unexpected }
 
@@ -184,6 +187,8 @@ let pp_ran_as_dot ?name fmt sc =
       fpf fmt "<TR><TD>timeout</TD></TR>";
     if dec.oomemory then
       fpf fmt "<TR><TD>out of memory</TD></TR>";
+    if dec.notconverted then
+      fpf fmt "<TR><TD>not converted</TD></TR>";
     if dec.unsupported <> [] then
       fpf fmt "<TR><TD>unsup. utility</TD></TR>";
     if dec.unexpected <> [] then

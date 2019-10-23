@@ -62,15 +62,20 @@ var/www"
     (fun fhs dir -> Colis.Symbolic.FilesystemSpec.add_dir dir fhs)
     Colis.Symbolic.FilesystemSpec.empty
 
+exception NotConverted
+
 let run_script ~cmd_line_arguments ~states ~package ~script =
   match Package.maintscript package script with
   | None -> (states, [], [])
   | Some script ->
-    Maintscript.interp
-      ~cmd_line_arguments
-      ~states
-      ~package_name:(Package.name package)
-      script
+    try
+      Maintscript.interp
+        ~cmd_line_arguments
+        ~states
+        ~package_name:(Package.name package)
+        script
+    with
+      Invalid_argument _ -> raise NotConverted
 
 let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : (unit, unit) t) : (ran_leaf, ran_node) t =
@@ -92,6 +97,8 @@ let run ~cpu_timeout ~package scenario =
           ([], [], make_ran_node ~timeout:true ())
         | Colis.Internals.Errors.MemoryLimitExceeded ->
           ([], [], make_ran_node ~oomemory:true ())
+        | NotConverted ->
+          ([], [], make_ran_node ~notconverted:true ())
         | exn ->
           ([], [], make_ran_node ~unexpected:[exn] ())
       in
