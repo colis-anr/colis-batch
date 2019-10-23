@@ -41,13 +41,24 @@ val pp_clean_as_dot : ?name:string -> Format.formatter -> clean -> unit
 
 (** {2 Ran Scenario} *)
 
+type 'a ran_node_gen
+
+val ran_node_gen_incomplete : 'a ran_node_gen -> bool
+val ran_node_gen_timeout : 'a ran_node_gen -> bool
+val ran_node_gen_oomemory : 'a ran_node_gen -> bool
+val ran_node_gen_notconverted : 'a ran_node_gen -> bool
+val ran_node_gen_unsupported : 'a ran_node_gen -> (string * string) list
+val ran_node_gen_has_unsupported : 'a ran_node_gen -> bool
+val ran_node_gen_unexpected : 'a ran_node_gen -> exn list
+val ran_node_gen_has_unexpected : 'a ran_node_gen -> bool
+
 type ran_leaf = Colis.Symbolic.Semantics.state list
-type ran_node
+type ran_node = Colis.Symbolic.Semantics.state list ran_node_gen
 
 val make_ran_node :
   ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool -> ?notconverted:bool ->
   ?unsupported:(string * string) list -> ?unexpected:exn list ->
-  unit -> ran_node
+  Colis.Symbolic.Semantics.state list -> ran_node
 
 val ran_node_incomplete : ran_node -> bool
 val ran_node_timeout : ran_node -> bool
@@ -67,13 +78,13 @@ val pp_ran_as_dot : ?name:string -> Format.formatter -> ran -> unit
 (** {2 Ran Scenario Summarized} *)
 
 type ran_leaf_sum = int
-type ran_sum = (ran_leaf_sum, ran_node) t
+type ran_node_sum = int ran_node_gen
+type ran_sum = (ran_leaf_sum, ran_node_sum) t
 
 val summarize : ran -> ran_sum
 
 val states_sum : ran_sum -> (Status.t * int) list
 
-(** {2 Ran Scenarios Coverage} *)
+type 'a coverage = Complete | Partial of 'a ran_node_gen | Null of 'a ran_node_gen
 
-type coverage = Complete | Partial of ran_node | Null of ran_node
-val coverage : ('a, ran_node) t -> coverage
+val coverage : ('a, 'b ran_node_gen) t -> 'b coverage

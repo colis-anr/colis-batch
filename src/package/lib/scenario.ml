@@ -48,41 +48,68 @@ let all_status sc =
   status sc
   |> List.sort_uniq compare
 
-let pp_as_dot ?(name="noideafixme") ~pp_leaf_decoration ~pp_node_decoration fmt sc =
+let pp_as_dot
+    ?(name="noideafixme")
+    ~pp_leaf_decoration ~pp_edge_to_leaf_decoration
+    ~pp_node_decoration ~pp_edge_to_node_decoration
+    ~leaf_decoration_color ~edge_to_leaf_decoration_color
+    ~node_decoration_color ~edge_to_node_decoration_color
+    fmt sc
+  =
+  let pp_color color_function fmt leaf_decoration =
+    match color_function leaf_decoration with
+    | None -> ()
+    | Some color -> fpf fmt ",color=%s,fontcolor=%s" color color
+  in
   let pp_run_script fmt (script, args) =
     fpf fmt "%s" (Maintscript.Key.to_string script);
     List.iter (fpf fmt " %s") args
   in
   let hash = Hashtbl.hash in
-  let rec pp_as_dot fmt sc =
+  let pp_edge_from_father fmt father me label pp_edge_to__decoration edge_to__decoration_color decoration =
+    fpf fmt "%d -> %d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD ALIGN=\"left\">%s</TD></TR>%a</TABLE> >%a];@\n"
+      father me label
+      pp_edge_to__decoration decoration
+      (pp_color edge_to__decoration_color) decoration
+  in
+  let rec pp_as_dot father label fmt sc =
     match sc with
     | Status (leaf_decoration, status) ->
-      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >];@\n"
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
         Status.pp status
         pp_leaf_decoration leaf_decoration
+        (pp_color leaf_decoration_color) leaf_decoration;
+      pp_edge_from_father
+        fmt father (hash sc) label
+        pp_edge_to_leaf_decoration edge_to_leaf_decoration_color leaf_decoration;
+
     | Unpack (node_decoration, on_success) ->
-      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD><I>unpack</I></TD></TR>%a</TABLE> >];@\n"
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD><I>unpack</I></TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
-        pp_node_decoration node_decoration;
-      fpf fmt "%d -> %d;@\n"
-        (hash sc) (hash on_success);
+        pp_node_decoration node_decoration
+        (pp_color node_decoration_color) node_decoration;
+      pp_edge_from_father
+        fmt father (hash sc) label
+        pp_edge_to_node_decoration edge_to_node_decoration_color node_decoration;
       fpf fmt "@\n@[<h 2>  %a@]@\n"
-        pp_as_dot on_success
+        (pp_as_dot (hash sc) "") on_success
 
     | RunScript (node_decoration, script, on_success, on_error) ->
-      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >];@\n"
+      fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
         pp_run_script script
-        pp_node_decoration node_decoration;
-      fpf fmt "%d -> %d [label=\"OK\"];@\n%d -> %d [label=\"Failed\"];@\n"
-        (hash sc) (hash on_success) (hash sc) (hash on_error);
+        pp_node_decoration node_decoration
+        (pp_color node_decoration_color) node_decoration;
+      pp_edge_from_father
+        fmt father (hash sc) label
+        pp_edge_to_node_decoration edge_to_node_decoration_color node_decoration;
       fpf fmt "@\n@[<h 2>  %a@]@\n@[<h 2>  %a@]@\n"
-        pp_as_dot on_success
-        pp_as_dot on_error
+        (pp_as_dot (hash sc) "OK") on_success
+        (pp_as_dot (hash sc) "Failed") on_error
   in
-  fpf fmt "digraph %s {@\n@[<h 2>  node [shape=plaintext];@\n@\n%a@]}@."
-    name pp_as_dot sc
+  fpf fmt "digraph %s {@\n@[<h 2>  node [shape=plaintext];@\n0 [label=\"\",shape=point,style=invis];@\n@\n%a@]}@."
+    name (pp_as_dot 0 "") sc
 
 (* =========================== [ Clean Scenario ] =========================== *)
 
@@ -98,39 +125,61 @@ let run_script ~on_success ~on_error ?(args=[]) key =
 
 let pp_clean_as_dot ?name fmt sc =
   let pp_nop _ _ = () in
-  pp_as_dot ?name ~pp_leaf_decoration:pp_nop ~pp_node_decoration:pp_nop fmt sc
+  pp_as_dot ?name
+    ~pp_leaf_decoration:pp_nop ~pp_edge_to_leaf_decoration:pp_nop
+    ~pp_node_decoration:pp_nop ~pp_edge_to_node_decoration:pp_nop
+    ~leaf_decoration_color:(fun _ -> None) ~edge_to_leaf_decoration_color:(fun _ -> None)
+    ~node_decoration_color:(fun _ -> None) ~edge_to_node_decoration_color:(fun _ -> None)
+    fmt sc
 
 (* ============================ [ Ran Scenario ] ============================ *)
 
-type ran_leaf = Colis.Symbolic.Semantics.state list
-
-type ran_node =
-  { incomplete : bool ;
+type 'a ran_node_gen =
+  { states_before : 'a ;
+    incomplete : bool ;
     timeout : bool ;
     oomemory : bool ;
     notconverted : bool ;
     unsupported : (string * string) list ;
     unexpected : exn list }
 
-let make_ran_node
+let ran_node_gen_incomplete r = r.incomplete
+let ran_node_gen_timeout r = r.timeout
+let ran_node_gen_oomemory r = r.oomemory
+let ran_node_gen_notconverted r = r.notconverted
+let ran_node_gen_unsupported r = r.unsupported
+let ran_node_gen_has_unsupported r = r.unsupported <> []
+let ran_node_gen_unexpected r = r.unexpected
+let ran_node_gen_has_unexpected r = r.unexpected <> []
+
+let ran_node_gen_had_problem r =
+  ran_node_gen_incomplete r || ran_node_gen_timeout r || ran_node_gen_oomemory r
+  || ran_node_gen_notconverted r || ran_node_gen_has_unsupported r
+  || ran_node_gen_has_unexpected r
+
+let make_ran_node_gen
     ?(incomplete=false) ?(timeout=false) ?(oomemory=false) ?(notconverted=false)
     ?(unsupported=[]) ?(unexpected=[])
-    ()
-  = { incomplete ; timeout ; oomemory ; notconverted ; unsupported ; unexpected }
+    states_before
+  = { states_before ;
+      incomplete ; timeout ; oomemory ; notconverted ;
+      unsupported ; unexpected }
 
-let ran_node_incomplete r = r.incomplete
-let ran_node_timeout r = r.timeout
-let ran_node_oomemory r = r.oomemory
-let ran_node_notconverted r = r.notconverted
-let ran_node_unsupported r = r.unsupported
-let ran_node_has_unsupported r = r.unsupported <> []
-let ran_node_unexpected r = r.unexpected
-let ran_node_has_unexpected r = r.unexpected <> []
+(* ============================ [ Ran Scenario ] ============================ *)
 
-let ran_node_had_problem r =
-  ran_node_incomplete r || ran_node_timeout r || ran_node_oomemory r
-  || ran_node_notconverted r || ran_node_has_unsupported r
-  || ran_node_has_unexpected r
+type ran_leaf = Colis.Symbolic.Semantics.state list
+type ran_node = Colis.Symbolic.Semantics.state list ran_node_gen
+
+let ran_node_incomplete = ran_node_gen_incomplete
+let ran_node_timeout = ran_node_gen_timeout
+let ran_node_oomemory = ran_node_gen_oomemory
+let ran_node_notconverted = ran_node_gen_notconverted
+let ran_node_unsupported = ran_node_gen_unsupported
+let ran_node_has_unsupported = ran_node_gen_has_unsupported
+let ran_node_unexpected = ran_node_gen_unexpected
+let ran_node_has_unexpected = ran_node_gen_has_unexpected
+
+let make_ran_node = make_ran_node_gen
 
 type ran = (ran_leaf, ran_node) t
 
@@ -144,44 +193,16 @@ let states sc =
   |> List.sort compare
   |> List.group compare
 
-type coverage = Complete | Partial of ran_node | Null of ran_node
-
-let merge_ran_nodes a b =
-  { incomplete = a.incomplete || b.incomplete ;
-    timeout = a.timeout || b.timeout ;
-    oomemory = a.oomemory || b.oomemory ;
-    notconverted = a.notconverted || b.notconverted ;
-    unsupported = a.unsupported @ b.unsupported ;
-    unexpected = a.unexpected @ b.unexpected }
-
-let merge_coverage a b =
-  match a, b with
-  | Null rn1, Null rn2 -> Null (merge_ran_nodes rn1 rn2)
-  | Null rn1, Partial rn2
-  | Partial rn1, Null rn2
-  | Partial rn1, Partial rn2 -> Partial (merge_ran_nodes rn1 rn2)
-  | Null rn, Complete
-  | Partial rn, Complete
-  | Complete, Null rn
-  | Complete, Partial rn -> Partial rn
-  | Complete, Complete -> Complete
-
-let rec coverage = function
-  | Status _ -> Complete
-  | Unpack (r, sc) ->
-    if ran_node_had_problem r then
-      Null r
-    else
-      coverage sc
-  | RunScript (r, _, s1, s2) ->
-    if ran_node_had_problem r then
-      Null r
-    else
-      merge_coverage (coverage s1) (coverage s2)
-
-let pp_ran_as_dot ?name fmt sc =
-  let pp_leaf_decoration fmt states =
-    fpf fmt "<TR><TD>(%d states)</TD></TR>" (List.length states)
+let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
+  let pp_leaf_decoration _fmt _states = ()
+  in
+  let pp_edge_to_leaf_decoration fmt states =
+    fpf fmt "<TR><TD ALIGN=\"left\">(%d states)</TD></TR>" (List.length states)
+  in
+  let leaf_decoration_color states =
+    if states = [] then Some "gray" else None
+  in
+  let edge_to_leaf_decoration_color = leaf_decoration_color
   in
   let pp_node_decoration fmt dec =
     if dec.incomplete then
@@ -197,20 +218,53 @@ let pp_ran_as_dot ?name fmt sc =
     if dec.unexpected <> [] then
       fpf fmt "<TR><TD>unexpected exception</TD></TR>"
   in
-  pp_as_dot ?name ~pp_leaf_decoration ~pp_node_decoration fmt sc
+  let pp_edge_to_node_decoration fmt dec =
+    fpf fmt "<TR><TD ALIGN=\"left\">(%d states)</TD></TR>" (List.length dec.states_before)
+  in
+  let node_decoration_color dec =
+    if ran_node_gen_had_problem dec then
+      Some "brown"
+    else if dec.states_before = [] then
+      Some "gray"
+    else
+      None
+  in
+  let edge_to_node_decoration_color dec =
+    if dec.states_before = [] then
+      Some "gray"
+    else
+      None
+  in
+  pp_as_dot ?name
+    ~pp_leaf_decoration ~pp_edge_to_leaf_decoration
+    ~pp_node_decoration ~pp_edge_to_node_decoration
+    ~leaf_decoration_color ~edge_to_leaf_decoration_color
+    ~node_decoration_color ~edge_to_node_decoration_color
+    fmt sc
 
 (* ======================= [ Ran Scenario Summarized ] ====================== *)
 
 type ran_leaf_sum = int
-type ran_sum = (ran_leaf_sum, ran_node) t
+type ran_node_sum = int ran_node_gen
+
+type ran_sum =  (ran_leaf_sum, ran_node_sum) t
 
 let summarize_ran_leaf = List.length
 
+let summarize_ran_node (ran_node : ran_node) =
+  { states_before = List.length ran_node.states_before ;
+    incomplete = ran_node.incomplete ;
+    timeout = ran_node.timeout ;
+    oomemory = ran_node.oomemory ;
+    notconverted = ran_node.notconverted ;
+    unsupported = ran_node.unsupported ;
+    unexpected = ran_node.unexpected }
+
 let rec summarize = function
   | Status (leaf, st) -> Status (summarize_ran_leaf leaf, st)
-  | Unpack (node, sc) -> Unpack (node, summarize sc)
+  | Unpack (node, sc) -> Unpack (summarize_ran_node node, summarize sc)
   | RunScript (node, script, sc1, sc2) ->
-    RunScript (node, script, summarize sc1, summarize sc2)
+    RunScript (summarize_ran_node node, script, summarize sc1, summarize sc2)
 
 let states_sum sc =
   let rec states_sum = function
@@ -222,3 +276,39 @@ let states_sum sc =
   |> List.sort compare
   |> List.group compare
   |> List.map (fun (sc, l) -> (sc, List.fold_left (+) 0 l))
+
+let merge_ran_node_gens a b =
+  { states_before = a.states_before ; (* FIXME: what sense should that have? *)
+    incomplete = a.incomplete || b.incomplete ;
+    timeout = a.timeout || b.timeout ;
+    oomemory = a.oomemory || b.oomemory ;
+    notconverted = a.notconverted || b.notconverted ;
+    unsupported = a.unsupported @ b.unsupported ;
+    unexpected = a.unexpected @ b.unexpected }
+
+type 'a coverage = Complete | Partial of 'a ran_node_gen | Null of 'a ran_node_gen
+
+let merge_coverage a b =
+  match a, b with
+  | Null rn1, Null rn2 -> Null (merge_ran_node_gens rn1 rn2)
+  | Null rn1, Partial rn2
+  | Partial rn1, Null rn2
+  | Partial rn1, Partial rn2 -> Partial (merge_ran_node_gens rn1 rn2)
+  | Null rn, Complete
+  | Partial rn, Complete
+  | Complete, Null rn
+  | Complete, Partial rn -> Partial rn
+  | Complete, Complete -> Complete
+
+let rec coverage = function
+  | Status _ -> Complete
+  | Unpack (r, sc) ->
+    if ran_node_gen_had_problem r then
+      Null r
+    else
+      coverage sc
+  | RunScript (r, _, s1, s2) ->
+    if ran_node_gen_had_problem r then
+      Null r
+    else
+      merge_coverage (coverage s1) (coverage s2)

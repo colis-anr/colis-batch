@@ -336,20 +336,20 @@ let generate_and_write ~start_time ~end_time packages_and_scenarii =
               let open Colis_package.Scenario in
               match coverage scenario with
               | Null r ->
-                if ran_node_incomplete r then incr nb_incomplete;
-                if ran_node_timeout r then incr nb_timeout;
-                if ran_node_oomemory r then incr nb_oomemory;
-                if ran_node_notconverted r then incr nb_notconverted;
-                if ran_node_has_unsupported r then incr nb_unsupported;
-                if ran_node_has_unexpected r then incr nb_unexpected
+                if ran_node_gen_incomplete r then incr nb_incomplete;
+                if ran_node_gen_timeout r then incr nb_timeout;
+                if ran_node_gen_oomemory r then incr nb_oomemory;
+                if ran_node_gen_notconverted r then incr nb_notconverted;
+                if ran_node_gen_has_unsupported r then incr nb_unsupported;
+                if ran_node_gen_has_unexpected r then incr nb_unexpected
               | Partial r ->
                 incr nb_partial;
-                if ran_node_incomplete r then incr nb_incomplete;
-                if ran_node_timeout r then incr nb_timeout;
-                if ran_node_oomemory r then incr nb_oomemory;
-                if ran_node_notconverted r then incr nb_notconverted;
-                if ran_node_has_unsupported r then incr nb_unsupported;
-                if ran_node_has_unexpected r then incr nb_unexpected
+                if ran_node_gen_incomplete r then incr nb_incomplete;
+                if ran_node_gen_timeout r then incr nb_timeout;
+                if ran_node_gen_oomemory r then incr nb_oomemory;
+                if ran_node_gen_notconverted r then incr nb_notconverted;
+                if ran_node_gen_has_unsupported r then incr nb_unsupported;
+                if ran_node_gen_has_unexpected r then incr nb_unexpected
               | Complete -> incr nb_complete)
            scenarii)
       packages_and_scenarii;

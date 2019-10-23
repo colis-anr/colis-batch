@@ -90,11 +90,11 @@ let pp_scenarii_summaries fmt scenarii =
              List.iter
                (fun (utility, message) ->
                   fpf fmt "<p>Unsupported: %s: %s</p>" utility message)
-               (ran_node_unsupported r);
+               (ran_node_gen_unsupported r);
              List.iter
                (fun exn ->
                   fpf fmt "<p>Unexpected exception: %s</p>" (Printexc.to_string exn))
-               (ran_node_unexpected r)
+               (ran_node_gen_unexpected r)
          );
 
          fpf fmt "</div>")
