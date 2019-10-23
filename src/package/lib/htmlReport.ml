@@ -52,7 +52,7 @@ let pp_parsing_status fmt package =
   fpf fmt "</dl></dl>"
 
 let pp_scenarii_summaries fmt scenarii =
-  fpf fmt "<h2>Scenarii</h2>";
+  fpf fmt "<h2>Scenarios</h2>";
   if List.length scenarii > 0 then
     List.iter
       (fun (name, scenario) ->
@@ -82,6 +82,21 @@ let pp_scenarii_summaries fmt scenarii =
                 states)
            (Scenario.states scenario);
 
+         (
+           let open Scenario in
+           match coverage scenario with
+           | Complete -> ()
+           | Partial r | Null r ->
+             List.iter
+               (fun (utility, message) ->
+                  fpf fmt "<p>Unsupported: %s: %s</p>" utility message)
+               (ran_node_unsupported r);
+             List.iter
+               (fun exn ->
+                  fpf fmt "<p>Unexpected exception: %s</p>" (Printexc.to_string exn))
+               (ran_node_unexpected r)
+         );
+
          fpf fmt "</div>")
       scenarii
   else
@@ -109,7 +124,7 @@ let generate_and_write ~start_time ~end_time ?prefix ~copy_static package scenar
       Unix.pp_time start_time
       Unix.pp_time end_time
       (floor (0.5 +. end_time -. start_time));
-    
+
     pp_parsing_status fmt package;
     pp_scenarii_summaries fmt scenarii
   );

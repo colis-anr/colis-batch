@@ -122,12 +122,15 @@ let ran_node_incomplete r = r.incomplete
 let ran_node_timeout r = r.timeout
 let ran_node_oomemory r = r.oomemory
 let ran_node_notconverted r = r.notconverted
-let ran_node_unsupported r = r.unsupported <> []
-let ran_node_unexpected r = r.unexpected <> []
+let ran_node_unsupported r = r.unsupported
+let ran_node_has_unsupported r = r.unsupported <> []
+let ran_node_unexpected r = r.unexpected
+let ran_node_has_unexpected r = r.unexpected <> []
 
 let ran_node_had_problem r =
   ran_node_incomplete r || ran_node_timeout r || ran_node_oomemory r
-  || ran_node_notconverted r || ran_node_unsupported r || ran_node_unexpected r
+  || ran_node_notconverted r || ran_node_has_unsupported r
+  || ran_node_has_unexpected r
 
 type ran = (ran_leaf, ran_node) t
 
