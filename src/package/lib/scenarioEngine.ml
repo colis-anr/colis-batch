@@ -83,12 +83,12 @@ let run ~cpu_timeout ~package scenario =
     | Status ((), status) -> Status (states, status)
     | Unpack ((), on_success) ->
       if states = [] then
-        Unpack (make_ran_node (), run [] on_success)
+        Unpack (make_ran_node [], run [] on_success)
       else
-        Unpack (make_ran_node (), run states on_success) (* FIXME!!! *)
+        Unpack (make_ran_node states, run states on_success) (* FIXME!!! *)
     | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
       if states = [] then
-        RunScript (make_ran_node (), (script, cmd_line_arguments),
+        RunScript (make_ran_node [], (script, cmd_line_arguments),
                    run [] on_success, run [] on_error)
       else
         let (success, error, ran_node) =
@@ -96,18 +96,18 @@ let run ~cpu_timeout ~package scenario =
             let (success, error, incomplete) =
               run_script ~cmd_line_arguments ~states ~package ~script
             in
-            (success, error, make_ran_node ~incomplete:(incomplete<>[]) ())
+            (success, error, make_ran_node ~incomplete:(incomplete<>[]) states)
           with
           | Colis.Internals.Errors.Unsupported (utility, msg) ->
-            ([], [], make_ran_node ~unsupported:[utility, msg] ())
+            ([], [], make_ran_node ~unsupported:[utility, msg] states)
           | Colis.Internals.Errors.CpuTimeLimitExceeded ->
-            ([], [], make_ran_node ~timeout:true ())
+            ([], [], make_ran_node ~timeout:true states)
           | Colis.Internals.Errors.MemoryLimitExceeded ->
-            ([], [], make_ran_node ~oomemory:true ())
+            ([], [], make_ran_node ~oomemory:true states)
           | NotConverted ->
-            ([], [], make_ran_node ~notconverted:true ())
+            ([], [], make_ran_node ~notconverted:true states)
           | exn ->
-            ([], [], make_ran_node ~unexpected:[exn] ())
+            ([], [], make_ran_node ~unexpected:[exn] states)
         in
         RunScript (ran_node, (script, cmd_line_arguments),
                    run success on_success, run error on_error)
