@@ -3,8 +3,8 @@ let pp_arg_list = Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ")
 
 let def_contents = ["contents"]
 let def_corpus = "corpus"
-let def_cpu_timeout = 5.
-let def_memory_limit = "1G"
+let def_cpu_timeout = 60.
+let def_memory_limit = "2G"
 let def_external_sources = "external_sources"
 let def_report = "report"
 let def_share = "share"
@@ -35,7 +35,7 @@ let speclist ~one_package =
     ]
   in
   let speclist =
-    if one_package then
+    if not one_package then
       speclist @
       ["--corpus",      Set_string corpus,      spf "DIR Sets the path to the corpus (default: %s)" !corpus;]
     else
