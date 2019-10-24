@@ -112,9 +112,28 @@ let run ~cpu_timeout ~package scenario =
         RunScript (ran_node, (script, cmd_line_arguments),
                    run success on_success, run error on_error)
   in
-  Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
-  let root = Colis.Constraints.Var.fresh ~hint:"r" () in
-  let disj = Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs in
-  let disj = List.map Colis.Constraints.Clause.make_initial disj in
-  let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
-  run stas scenario
+  try
+    Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
+    let root = Colis.Constraints.Var.fresh ~hint:"r" () in
+    let disj = Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs in
+    let disj = List.map Colis.Constraints.Clause.make_initial disj in
+    let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
+    run stas scenario
+  with
+  (* FIXME: maybe a cleaner way would be to have an initial node of a scenario? *)
+  | Colis.Internals.Errors.CpuTimeLimitExceeded ->
+    (
+      match scenario with
+      | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
+        RunScript (make_ran_node ~timeout:true [], (script, cmd_line_arguments),
+                   run [] on_success, run [] on_error)
+      | _ -> assert false
+    )
+  | Colis.Internals.Errors.MemoryLimitExceeded ->
+    (
+      match scenario with
+      | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
+        RunScript (make_ran_node ~oomemory:true [], (script, cmd_line_arguments),
+                   run [] on_success, run [] on_error)
+      | _ -> assert false
+    )
