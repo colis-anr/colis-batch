@@ -18,5 +18,6 @@ depends: [
   "colis-language"
   "dune"            {build}
   "lwt"
-  "lwt_ppx"
+  "lwt_ppx"         {build}
+  "ppx_blob"        {build}
 ]

@@ -39,14 +39,6 @@ let clever_title_from_title_and_path title_and_path =
     (spf "<a href=\"%s/index.html\">Report</a>" rev_path, [])
   |> fst
 
-let copy_static_to path =
-  let cmd =
-    spf "cp -R %S/static %S/%S"
-      !Config.share
-      !Config.report (String.concat "/" path)
-  in
-  assert (0 = Sys.command cmd)
-
 let pp_header ?(highlight=false) ?(viz=false) title_and_path fmt () =
   let rev_path = rev_path_from_title_and_path title_and_path in
   fpf fmt {|
@@ -153,3 +145,27 @@ let with_formatter_to_html_report ?highlight ?viz (title_and_path : (string * st
   let y = f fmt in
   pp_footer fmt ();
   y
+
+let static = [
+  "highlight.js/9.14.2/styles/github.min.css",
+  [%blob "static/highlight.js/9.14.2/styles/github.min.css"]  ;
+  "highlight.js/9.14.2/highlight.min.js",
+  [%blob "static/highlight.js/9.14.2/highlight.min.js"]  ;
+  "highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js",
+  [%blob "static/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"]  ;
+  "viz.js/v2.1.2/full.render.js",
+  [%blob "static/viz.js/v2.1.2/full.render.js"]  ;
+  "viz.js/v2.1.2/viz.js",
+  [%blob "static/viz.js/v2.1.2/viz.js"]  ;
+  "reset.css",
+  [%blob "static/reset.css"]  ;
+  "style.css",
+  [%blob "static/style.css"]  ;
+]
+
+let copy_static_to prefix =
+  List.iter
+    (fun (path, content) ->
+       with_formatter_to_file (prefix @ [path]) @@ fun fmt ->
+       Format.pp_print_string fmt content)
+    static
