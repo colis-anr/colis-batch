@@ -7,7 +7,6 @@ let def_cpu_timeout = 60.
 let def_memory_limit = "2G"
 let def_external_sources = "external_sources"
 let def_report = "report"
-let def_share = "share"
 let def_workers = 2
 
 let contents = ref [] (* On purpose! *)
@@ -17,7 +16,6 @@ let memory_limit = ref def_memory_limit
 let external_sources = ref def_external_sources
 let package = ref None
 let report = ref def_report
-let share = ref def_share
 let workers = ref def_workers
 
 let add l x = l := x :: !l
@@ -30,7 +28,6 @@ let speclist ~one_package =
       "--memory-limit", Set_string memory_limit, spf "NB Sets the memory limit, in bytes (default: %s)" def_memory_limit;
       "--external-sources", Set_string external_sources, spf "DIR Sets the path to the external sources (default: %s)" def_external_sources;
       "--report",      Set_string report,      spf "DIR Sets the path to the report (default: %s)" def_report;
-      "--share",       Set_string share,       spf "DIR Sets the path to the share directory (default: %s)" def_share;
       "--workers",     Set_int    workers,     spf "NB Sets the number of workers (default: %d)" def_workers;
     ]
   in
@@ -74,8 +71,6 @@ let check_values ~one_package =
     raise (Arg.Bad (spf "External sources directory (%s) must exist." !external_sources));
   if Sys.file_exists !report then
     raise (Arg.Bad (spf "Report directory (%s) must not exist." !report));
-  if not Sys.(file_exists !share && is_directory !share) then
-    raise (Arg.Bad (spf "Share directory (%s) must exist." !share));
   if not (!workers > 0) then
     raise (Arg.Bad (spf "Workers number (%d) must be positive." !workers));
   if one_package then
