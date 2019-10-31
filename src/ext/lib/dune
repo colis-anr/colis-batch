@@ -1,5 +1,5 @@
 (library
- (name colis_ext)
+ (name colis_batch_ext)
  (public_name colis-batch.ext)
  (libraries lwt.unix)
  (preprocess (pps lwt_ppx)))

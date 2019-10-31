@@ -28,38 +28,6 @@ let () =
   List.iter Contents.scan !Colis_common.Config.contents;
   epf "done!@."
 
-let handle_package path =
-  epf "Handling package at %s.@." path;
-  let start_time = Unix.gettimeofday () in
-  let package = Colis_package.parse_package path in
-  let scenarii =
-    Colis_package.map_all_scenarii
-      (fun (name, scenario) ->
-         try
-           let ran = Colis_package.run_scenario
-               ~cpu_timeout:!Config.cpu_timeout
-               ~package scenario in
-           Some (name, ran)
-         with
-           Invalid_argument _ -> None)
-    |> List.map_filter Fun.id
-  in
-  let end_time = Unix.gettimeofday () in
-  Colis_package.generate_and_write_html_report
-    ~start_time ~end_time
-    ~prefix:[Colis_package.Package.name package, ["package"; Colis_package.Package.safe_name package]]
-    ~copy_static:false
-    package scenarii;
-  (* We don't need the scenario nor the states for the general report, so we
-     only remember their summary. *)
-  let scenarii =
-    List.map
-      (fun (name, scenario) ->
-         (name, Colis_package.Scenario.summarize scenario))
-      scenarii
-  in
-  (package, scenarii)
-
 let () =
   let start_time = Unix.gettimeofday () in
   let packages_and_scenarii =

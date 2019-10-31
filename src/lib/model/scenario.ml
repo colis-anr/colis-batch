@@ -1,4 +1,4 @@
-open Colis_ext
+open Colis_batch_ext
 
 module Status = struct
   type t =

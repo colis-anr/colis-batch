@@ -12,6 +12,6 @@ val maintscript : t -> Maintscript.Key.t -> Maintscript.t option
 val maintscripts : t -> Maintscript.t list
 val iter_maintscripts : (Maintscript.t -> unit) -> t -> unit
 
-val parse : string -> t
+val parse : content:string list -> string -> t
 
 val are_all_maintscripts_ok : t -> bool

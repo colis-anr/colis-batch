@@ -1,0 +1,4 @@
+(library
+ (name colis_batch_report)
+ (public_name colis-batch.report)
+ (libraries colis-batch.model))

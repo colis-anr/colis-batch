@@ -1,5 +1,6 @@
-open Colis_ext
-open Scenario
+open Colis_batch_ext
+module Model = Colis_batch_model
+open Model.Scenario
 
 let fhs =
   "bin
@@ -65,14 +66,14 @@ var/www"
 exception NotConverted
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
-  match Package.maintscript package script with
+  match Model.Package.maintscript package script with
   | None -> (states, [], [])
   | Some script ->
     try
-      Maintscript.interp
+      Model.Maintscript.interp (* FIXME: that has to move to Engine *)
         ~cmd_line_arguments
         ~states
-        ~package_name:(Package.name package)
+        ~package_name:(Model.Package.name package)
         script
     with
       Invalid_argument _ -> raise NotConverted

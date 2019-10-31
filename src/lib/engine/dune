@@ -1,0 +1,4 @@
+(library
+ (name colis_batch_engine)
+ (public_name colis-batch.engine)
+ (libraries colis-language colis-batch.ext colis-batch.model colis-batch.report))

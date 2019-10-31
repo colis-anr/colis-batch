@@ -1,4 +1,4 @@
-open Colis_ext
+open Colis_batch_ext
 
 type name = string
 type version = string
@@ -7,6 +7,7 @@ type t =
   { path : string ;
     name : name ;
     version : version ;
+    content : string list ;
     maintscripts : Maintscript.t list }
 
 let path pkg = pkg.path
@@ -18,7 +19,7 @@ let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let maintscript pkg key = List.find_opt (Maintscript.has_key key) pkg.maintscripts
 
-let parse path =
+let parse ~content path =
   if not (Sys.file_exists path && Sys.is_directory path) then
     failwith "Package.parse: no such directory";
   let (name, version) = String.split_2_on_char '_' (Filename.basename path) in
@@ -32,7 +33,7 @@ let parse path =
          else
            None)
   in
-  { path; name; version; maintscripts }
+  { path; name; version; content ; maintscripts }
 
 let are_all_maintscripts_ok pkg =
   List.for_all
