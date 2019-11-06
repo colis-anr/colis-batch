@@ -7,6 +7,7 @@ module Name = struct
     | Removal
     | RemovalPurge
     | Idempotency of Maintscript.Key.t * string list
+  [@@deriving yojson]
 
   let to_string = function
     | Install -> "install"

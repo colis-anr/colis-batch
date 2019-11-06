@@ -49,7 +49,7 @@ val ran_node_gen_oomemory : 'a ran_node_gen -> bool
 val ran_node_gen_notconverted : 'a ran_node_gen -> bool
 val ran_node_gen_unsupported : 'a ran_node_gen -> (string * string) list
 val ran_node_gen_has_unsupported : 'a ran_node_gen -> bool
-val ran_node_gen_unexpected : 'a ran_node_gen -> exn list
+val ran_node_gen_unexpected : 'a ran_node_gen -> string list
 val ran_node_gen_has_unexpected : 'a ran_node_gen -> bool
 
 type ran_leaf = Colis.Symbolic.Semantics.state list
@@ -66,10 +66,11 @@ val ran_node_oomemory : ran_node -> bool
 val ran_node_notconverted : ran_node -> bool
 val ran_node_unsupported : ran_node -> (string * string) list
 val ran_node_has_unsupported : ran_node -> bool
-val ran_node_unexpected : ran_node -> exn list
+val ran_node_unexpected : ran_node -> string list
 val ran_node_has_unexpected : ran_node -> bool
 
 type ran = (ran_leaf, ran_node) t
+[@@deriving yojson]
 
 val states : ran -> (Status.t * Colis.Symbolic.Semantics.state list) list
 
@@ -78,8 +79,11 @@ val pp_ran_as_dot : ?name:string -> Format.formatter -> ran -> unit
 (** {2 Ran Scenario Summarized} *)
 
 type ran_leaf_sum = int
+
 type ran_node_sum = int ran_node_gen
+
 type ran_sum = (ran_leaf_sum, ran_node_sum) t
+[@@deriving yojson]
 
 val summarize : ran -> ran_sum
 

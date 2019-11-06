@@ -2,6 +2,7 @@
 
 module Key : sig
   type t = Preinst | Postinst | Prerm | Postrm
+  [@@deriving yojson]
 
   val to_string : t -> string
   val pp : Format.formatter -> t -> unit
@@ -16,6 +17,7 @@ end
 (* Maintscript *)
 
 type t
+[@@deriving yojson]
 
 val key : t -> Key.t
 val key_as_string : t -> string

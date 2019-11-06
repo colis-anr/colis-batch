@@ -20,4 +20,6 @@ depends: [
   "lwt"
   "lwt_ppx"         {build}
   "ppx_blob"        {build}
+  "ppx_deriving_yojson"  {build}
+  "yojson"
 ]

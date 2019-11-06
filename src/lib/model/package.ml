@@ -1,7 +1,7 @@
 open Colis_batch_ext
 
-type name = string
-type version = string
+type name = string  [@@deriving yojson]
+type version = string  [@@deriving yojson]
 
 type t =
   { path : string ;
@@ -9,6 +9,7 @@ type t =
     version : version ;
     content : string list ;
     maintscripts : Maintscript.t list }
+[@@deriving yojson]
 
 let path pkg = pkg.path
 let name pkg = pkg.name

@@ -2,6 +2,7 @@ open Colis_batch_ext
 
 module Key = struct
   type t = Preinst | Postinst | Prerm | Postrm
+  [@@deriving yojson]
 
   let to_string = function
     | Preinst -> "preinst"
@@ -32,6 +33,7 @@ type error =
   | ParsingRejected
   | ConversionErrored of string
   | ConversionRejected of string
+[@@deriving yojson]
 
 let error_to_string = function
   | ParsingErrored msg -> "parsing errored: " ^ msg
@@ -41,7 +43,8 @@ let error_to_string = function
 
 type t =
   { key : Key.t ;
-    content : (Morsmall.AST.program, error) result }
+    content : (Morsmall.AST.program, error) Serialisable.s_result }
+[@@deriving yojson]
 
 let key m = m.key
 let key_as_string m = Key.to_string m.key

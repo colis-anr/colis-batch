@@ -10,6 +10,7 @@ module Status = struct
     | Unpacked
     | OSEF
     | NonIdempotent
+  [@@deriving yojson]
 
   let to_string = function
     | Installed -> "Installed"
@@ -38,6 +39,7 @@ type ('leaf, 'node) t =
       'node
       * (Maintscript.Key.t * string list)
       * ('leaf, 'node) t * ('leaf, 'node) t
+[@@deriving yojson]
 
 let all_status sc =
   let rec status = function
@@ -114,6 +116,7 @@ let pp_as_dot
 (* =========================== [ Clean Scenario ] =========================== *)
 
 type clean = (unit, unit) t
+[@@deriving yojson]
 
 let status status = Status ((), status)
 
@@ -141,7 +144,8 @@ type 'a ran_node_gen =
     oomemory : bool ;
     notconverted : bool ;
     unsupported : (string * string) list ;
-    unexpected : exn list }
+    unexpected : string list }
+[@@deriving yojson]
 
 let ran_node_gen_incomplete r = r.incomplete
 let ran_node_gen_timeout r = r.timeout
@@ -163,12 +167,13 @@ let make_ran_node_gen
     states_before
   = { states_before ;
       incomplete ; timeout ; oomemory ; notconverted ;
-      unsupported ; unexpected }
+      unsupported ; unexpected = List.map Printexc.to_string unexpected }
 
 (* ============================ [ Ran Scenario ] ============================ *)
 
-type ran_leaf = Colis.Symbolic.Semantics.state list
-type ran_node = Colis.Symbolic.Semantics.state list ran_node_gen
+type ran_leaf = Serialisable.colis_symbolic_state list       [@@deriving yojson]
+type ran_node = Serialisable.colis_symbolic_state list ran_node_gen
+[@@deriving yojson]
 
 let ran_node_incomplete = ran_node_gen_incomplete
 let ran_node_timeout = ran_node_gen_timeout
@@ -181,7 +186,7 @@ let ran_node_has_unexpected = ran_node_gen_has_unexpected
 
 let make_ran_node = make_ran_node_gen
 
-type ran = (ran_leaf, ran_node) t
+type ran = (ran_leaf, ran_node) t                            [@@deriving yojson]
 
 let states sc =
   let rec states = function
@@ -244,10 +249,9 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
 
 (* ======================= [ Ran Scenario Summarized ] ====================== *)
 
-type ran_leaf_sum = int
-type ran_node_sum = int ran_node_gen
-
-type ran_sum =  (ran_leaf_sum, ran_node_sum) t
+type ran_leaf_sum = int                                      [@@deriving yojson]
+type ran_node_sum = int ran_node_gen                         [@@deriving yojson]
+type ran_sum =  (ran_leaf_sum, ran_node_sum) t               [@@deriving yojson]
 
 let summarize_ran_leaf = List.length
 
@@ -287,6 +291,7 @@ let merge_ran_node_gens a b =
     unexpected = a.unexpected @ b.unexpected }
 
 type 'a coverage = Complete | Partial of 'a ran_node_gen | Null of 'a ran_node_gen
+[@@deriving yojson]
 
 let merge_coverage a b =
   match a, b with

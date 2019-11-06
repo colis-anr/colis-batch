@@ -1,7 +1,7 @@
 type name = string
 type version = string
 
-type t
+type t [@@deriving yojson]
 
 val path : t -> string
 val name : t -> name

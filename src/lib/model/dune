@@ -1,4 +1,5 @@
 (library
  (name colis_batch_model)
  (public_name colis-batch.model)
- (libraries colis-language colis-batch.ext))
+ (libraries colis-language colis-batch.ext yojson)
+ (preprocess (pps ppx_deriving_yojson)))
