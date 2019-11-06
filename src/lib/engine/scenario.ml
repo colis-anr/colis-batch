@@ -116,8 +116,10 @@ let run ~cpu_timeout ~package scenario =
   try
     Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
     let root = Colis.Constraints.Var.fresh ~hint:"r" () in
-    let disj = Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs in
-    let disj = List.map Colis.Constraints.Clause.make_initial disj in
+    let disj =
+      Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
+      Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs
+    in
     let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
     run stas scenario
   with
