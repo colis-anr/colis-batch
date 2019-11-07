@@ -6,15 +6,18 @@ let parse_package_from_dir = Model.Package.parse
 
 let analyse_package = Engine.Package.analyse
 
-let save_package_report = Report.Package.save
-let load_package_report = Report.Package.load
+let save_package_report_as_json = Report.Package.save_as_json
+let load_package_report_as_json = Report.Package.load_as_json
 
 let summarize_package_report = Report.Package.summarize
 
-let save_package_report_summary = Report.Package.save_summary
-let load_package_report_summary = Report.Package.load_summary
+let save_package_report_summary_as_json = Report.Package.save_summary_as_json
+let load_package_report_summary_as_json = Report.Package.load_summary_as_json
+
+let save_package_report_summary_as_bin = Report.Package.save_summary_as_bin
+let load_package_report_summary_as_bin = Report.Package.load_summary_as_bin
 
 let combine_reports = Report.Batch.make
 
-let save_batch_report = Report.Batch.save
-let load_batch_report = Report.Batch.load
+let save_batch_report_as_json = Report.Batch.save_as_json
+let load_batch_report_as_json = Report.Batch.load_as_json

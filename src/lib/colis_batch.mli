@@ -24,17 +24,19 @@ val parse_package_from_dir : content:string list -> string -> Model.Package.t
 
 val analyse_package : Model.Package.t -> Report.Package.t
 
-val save_package_report : prefix:string -> Report.Package.t -> unit
-val load_package_report : prefix:string -> Report.Package.t
+val save_package_report_as_json : prefix:string -> Report.Package.t -> unit
+val load_package_report_as_json : prefix:string -> package:string -> Report.Package.t
 
 val summarize_package_report : Report.Package.t -> Report.Package.summary
 
-val save_package_report_summary : prefix:string -> Report.Package.summary -> unit
-val load_package_report_summary : prefix:string -> Report.Package.summary
+val save_package_report_summary_as_json : prefix:string -> Report.Package.summary -> unit
+val load_package_report_summary_as_json : prefix:string -> package:string -> Report.Package.summary
+val save_package_report_summary_as_bin : prefix:string -> Report.Package.summary -> unit
+val load_package_report_summary_as_bin : prefix:string -> package:string -> Report.Package.summary
 
 (** {2 A Batch of Packages} *)
 
 val combine_reports : Report.Package.summary list -> Report.Batch.t
 
-val save_batch_report : prefix:string -> Report.Batch.t -> unit
-val load_batch_report : prefix:string -> Report.Batch.t
+val save_batch_report_as_json : prefix:string -> Report.Batch.t -> unit
+val load_batch_report_as_json : prefix:string -> Report.Batch.t
