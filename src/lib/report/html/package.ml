@@ -85,8 +85,14 @@ let pp_index ~standalone fmt (report : t) =
   fpf fmt "<h2>Scenarios Summaries</h2>";
   pp_scenario_summaries fmt report
 
-let pp_redirecting_index fmt =
-  fpf fmt "<p>You should be redirected.</p>" (* FIXME *)
+let pp_redirecting_index fmt tap =
+  let path = Common.path_from_tap tap |> Filename.concat_l in
+  fpf fmt "<meta http-equiv=\"refresh\" content=\"0; url=%s\" />"
+    path;
+  fpf fmt "<p>This is a report for a single package. There is nothing here to
+    see. You should be redirected. If not, you may <a href=\"%s\">use this
+    link</a>.</p>"
+    path
 
 let pp_maintscript_colis fmt maintscript =
   let pp_status fmt msg =
@@ -188,15 +194,15 @@ let generate_scenario_state ~prefix tap_package name id state status =
   )
 
 let generate ~standalone ~prefix (report : t) =
+  let tap = [Model.Package.name report.package,
+             ["package"; Model.Package.safe_name report.package; "index.html"]] in
   if standalone then
     ( (* In case of standalone, we need to take care of the static extraction
          ourselves. And generate an index that redirects directly in the package. *)
       Common.extract_static ~prefix;
       Common.with_formatter_to_html_report ~prefix [] @@ fun fmt ->
-      pp_redirecting_index fmt
+      pp_redirecting_index fmt tap
     );
-  let tap = [Model.Package.name report.package,
-             ["package"; Model.Package.safe_name report.package; "index.html"]] in
   ( (* Index of the package. *)
     Common.with_formatter_to_html_report ~viz:true ~prefix tap @@ fun fmt ->
     pp_index ~standalone fmt report
