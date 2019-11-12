@@ -2,5 +2,16 @@
  (name colis_batch)
  (public_name colis-batch)
  (libraries
-  colis-language colis-batch.ext
-  colis-batch.model colis-batch.engine))
+  colis-language
+  colis-batch.ext
+  colis-batch.config
+  colis-batch.model
+  colis-batch.engine)
+ (modules :standard \ colis_batch_config))
+
+(library
+ (name colis_batch_config)
+ (public_name colis-batch.config)
+ (libraries yojson)
+ (preprocess (pps ppx_deriving_yojson))
+ (modules colis_batch_config))

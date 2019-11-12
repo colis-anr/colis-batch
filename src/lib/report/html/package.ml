@@ -4,17 +4,6 @@ open Colis_batch_report_common.Package
 
 let nb_states_to_report = 100 (* FIXME: should not be hardcoded *)
 
-let pp_meta fmt (report : t) =
-  fpf fmt "<h2>Meta</h2>
-  <dl>
-  <dt>Start time</dt><dd>%a</dd>
-  <dt>End time</dt><dd>%a</dd>
-  <dt>Duration</dt><dd>%.0fs</dd>
-  </dl>"
-    Unix.pp_time report.start_time
-    Unix.pp_time report.end_time
-    (floor (0.5 +. report.end_time -. report.start_time))
-
 let pp_maintscript_status fmt maintscript =
   let (html_class, status, message) =
     (match Model.Maintscript.error maintscript with
@@ -85,9 +74,12 @@ let pp_scenario_summary fmt (name, scenario) =
 let pp_scenario_summaries fmt (report : t) =
   List.iter (pp_scenario_summary fmt) report.scenarii
 
-let pp_index fmt (report : t) =
+let pp_index ~standalone fmt (report : t) =
+  if standalone then
+    (fpf fmt "<h2>Configuration</h2>";
+     Config.pp fmt report.config);
   fpf fmt "<h2>Meta</h2>";
-  pp_meta fmt report;
+  Meta.pp fmt report.meta;
   fpf fmt "<h2>Parsing Status</h2>";
   pp_parsing_status fmt report;
   fpf fmt "<h2>Scenarios Summaries</h2>";
@@ -207,7 +199,7 @@ let generate ~standalone ~prefix (report : t) =
              ["package"; Model.Package.safe_name report.package]] in
   ( (* Index of the package. *)
     Common.with_formatter_to_html_report ~viz:true ~prefix tap @@ fun fmt ->
-    pp_index fmt report
+    pp_index ~standalone fmt report
   );
   (* One page for each maintscript. *)
   Model.Package.iter_maintscripts

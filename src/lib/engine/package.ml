@@ -2,14 +2,14 @@ open Colis_batch_ext
 module Model = Colis_batch_model
 module Report = Colis_batch_report
 
-let analyse package =
-  let start_time = Unix.gettimeofday () in
-  let scenarii =
+let analyse ~config package =
+  let (meta, scenarii) =
+    Report.Meta.while_gathering_meta @@ fun () ->
     List.map
       (fun (name, scenario) ->
          try
            let ran = Scenario.run
-               ~cpu_timeout:60. (*!Config.cpu_timeout (* FIXME *)*)
+               ~cpu_timeout:config.Colis_batch_config.cpu_timeout
                ~package scenario in
            Some (name, ran)
          with
@@ -17,7 +17,4 @@ let analyse package =
       Model.Scenarii.all
     |> List.map_filter Fun.id
   in
-  let end_time = Unix.gettimeofday () in
-  Report.Package.make
-    ~start_time ~end_time
-    package scenarii
+  Report.Package.make ~meta ~config package scenarii

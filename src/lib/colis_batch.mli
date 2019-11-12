@@ -6,6 +6,9 @@
     are made available directly in this main module. But everything else is
     accessible from these submodules. *)
 
+module Config = Colis_batch_config
+(** {!Config} contains the configuration options. *)
+
 module Model = Colis_batch_model
 (** {!Model} contains the internal definitions [CoLiS-Batch] uses: scripts,
     packages, scenarios, etc. *)
@@ -22,7 +25,7 @@ module Engine = Colis_batch_engine
 
 val parse_package_from_dir : content:string list -> string -> Model.Package.t
 
-val analyse_package : Model.Package.t -> Report.Package.t
+val analyse_package : config:Config.t -> Model.Package.t -> Report.Package.t
 
 val save_package_report_as_json : prefix:string -> Report.Package.t -> unit
 val load_package_report_as_json : prefix:string -> package:string -> Report.Package.t
@@ -37,7 +40,7 @@ val load_package_report_summary_as_bin : prefix:string -> package:string -> Repo
 (** {2 A Batch of Packages} *)
 
 val make_batch_report :
-  start_time:float -> end_time:float ->
+  meta:Report.Meta.t -> config:Config.t ->
   Report.Package.summary list ->
   Report.Batch.t
 

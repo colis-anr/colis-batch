@@ -1,3 +1,4 @@
+module Config = Colis_batch_config
 module Model = Colis_batch_model
 module Report = Colis_batch_report
 module Engine = Colis_batch_engine

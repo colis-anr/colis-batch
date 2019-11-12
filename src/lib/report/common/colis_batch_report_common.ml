@@ -1,4 +1,5 @@
 open Colis_batch_ext
+module Meta = Meta
 module Package = Package
 module Batch = Batch
 

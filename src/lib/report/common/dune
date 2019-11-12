@@ -1,5 +1,8 @@
 (library
  (name colis_batch_report_common)
  (public_name colis-batch.report.common)
- (libraries colis-batch.model yojson)
+ (libraries
+  colis-batch.config
+  colis-batch.model
+  yojson)
  (preprocess (pps ppx_deriving_yojson)))
