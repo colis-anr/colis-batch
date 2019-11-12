@@ -5,12 +5,16 @@ open Colis_batch_report_common.Batch
 let percentage a b = 100 * a / b (* FIXME *)
 
 let pp_scenarios_summary fmt numbers =
-  fpf fmt "<p>In total, I attempted to run %d scenarios. (%d packages × %d scenarios). "
+  fpf fmt "<p>Out of a total of %d scenarios (%d packages × %d scenarios) that attempted to run:</p><ul>"
     numbers.scenarios.stotal numbers.packages numbers.scenarios.per_package;
-  fpf fmt "I managed to run %d scenarios (%d%%) completely and %d (%d%%) partially. "
-    numbers.scenarios.complete (percentage numbers.scenarios.complete numbers.scenarios.stotal)
+  fpf fmt "<li>%d (%d%% of all scenarios) were ran completely,</li>"
+    numbers.scenarios.complete (percentage numbers.scenarios.complete numbers.scenarios.stotal);
+  fpf fmt "<li>%d (%d%%) were ran partially,</li>"
     numbers.scenarios.partial (percentage numbers.scenarios.partial numbers.scenarios.stotal);
-  fpf fmt "I counted %d problems:<ul>" numbers.scenarios.problems;
+  fpf fmt "<li> and %d (%d%%) could not be run at all.</li></ul>"
+    numbers.scenarios.failure (percentage numbers.scenarios.failure numbers.scenarios.stotal);
+
+  fpf fmt "<p>There were %d problems:</p><ul>" numbers.scenarios.problems;
   fpf fmt "<li>%d scripts not converted (%d%% of all problems),</li>"
     numbers.scenarios.not_converted (percentage numbers.scenarios.not_converted numbers.scenarios.problems);
   fpf fmt "<li>%d timeouts (%d%%),</li>"
@@ -21,7 +25,7 @@ let pp_scenarios_summary fmt numbers =
     numbers.scenarios.incomplete (percentage numbers.scenarios.incomplete numbers.scenarios.problems);
   fpf fmt "<li>%d unsupported utilities (%d%%),</li>"
     numbers.scenarios.unsupported_utility (percentage numbers.scenarios.unsupported_utility numbers.scenarios.problems);
-  fpf fmt "<li>and %d unexpected exceptions (%d%%).</li></ul></p>"
+  fpf fmt "<li>and %d unexpected exceptions (%d%%).</li></ul>"
     numbers.scenarios.unexpected (percentage numbers.scenarios.unexpected numbers.scenarios.problems)
 
 let pp_scripts_summary fmt numbers =
@@ -44,7 +48,7 @@ let pp_index fmt report =
   pp_scenarios_summary fmt report.numbers;
   List.iter
     (fun (name, _scenario) ->
-       fpf fmt "<h3>%s</h3>"
+       fpf fmt "<h3>%s</h3><div>"
          (Model.Scenarii.Name.to_fancy_string name);
        fpf fmt "<div>%a</div>"
          Common.pp_viz
@@ -73,9 +77,9 @@ let pp_scenario fmt report scenario =
               List.iter
                 (fun (status, states) ->
                    if states <> 0 then
-                     let others = List.assoc status package_by_status in
-                     others := package :: !others
-                )
+                     match List.assoc_opt status package_by_status with
+                     | None -> ()
+                     | Some others -> others := package :: !others)
               (Model.Scenario.states_sum scenario)
            )
            package.Colis_batch_report_common.Package.scenarii
@@ -83,7 +87,13 @@ let pp_scenario fmt report scenario =
       report.packages;
     List.map
       (fun (status, packages) ->
-         (status, !packages) (* FIXME: sort by name *))
+         (status,
+          List.sort_uniq
+            (fun p1 p2 ->
+               compare
+                 (Model.Package.name p1.Colis_batch_report_common.Package.package)
+                 (Model.Package.name p2.Colis_batch_report_common.Package.package))
+            !packages))
       package_by_status
   in
   fpf fmt "<h2>Summary</h2><ul>";

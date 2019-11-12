@@ -166,31 +166,26 @@ let generate_scenario_state ~prefix tap_package name id state status =
           status ^ " #" ^ id, [status; id ^ ".html"]])
     @@ fun fmt ->
     Common.pp_viz fmt (id ^ ".dot");
-    let () =
-      let open Colis in
-      let open Symbolic.Semantics in
-      if not (Common.Stdout.is_empty state.stdout) then
-        (
-          fpf fmt "<h2>stdout</h2><pre>";
-          List.iter (fpf fmt "%s@\n")
-            (List.rev @@ state.stdout.lines);
-          if state.stdout.line <> "" then
-            fpf fmt "%s" state.stdout.line;
-          fpf fmt "</pre>"
-        );
-      if not (Common.Stdout.is_empty state.log) then
-        (
-          fpf fmt "<h2>log</h2><pre>";
-          List.iter (fpf fmt "%s@\n")
-            (List.rev @@ state.log.lines);
-          if state.log.line <> "" then
-            fpf fmt "%s" state.log.line;
-          fpf fmt "</pre>"
-        )
-    in
-    fpf fmt "<hr/><h2>Debug</h2><pre>";
-    Colis.print_symbolic_state fmt state;
-    fpf fmt "</pre>"
+    let open Colis in
+    let open Symbolic.Semantics in
+    if not (Common.Stdout.is_empty state.stdout) then
+      (
+        fpf fmt "<h2>stdout</h2><pre>";
+        List.iter (fpf fmt "%s@\n")
+          (List.rev @@ state.stdout.lines);
+        if state.stdout.line <> "" then
+          fpf fmt "%s" state.stdout.line;
+        fpf fmt "</pre>"
+      );
+    if not (Common.Stdout.is_empty state.log) then
+      (
+        fpf fmt "<h2>log</h2><pre>";
+        List.iter (fpf fmt "%s@\n")
+          (List.rev @@ state.log.lines);
+        if state.log.line <> "" then
+          fpf fmt "%s" state.log.line;
+        fpf fmt "</pre>"
+      )
   )
 
 let generate ~standalone ~prefix (report : t) =

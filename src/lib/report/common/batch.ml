@@ -11,6 +11,7 @@ and numbers_scenarios =
     per_package : int ;
     complete : int ;
     partial : int ;
+    failure : int ;
     incomplete : int ;
     timeout : int ;
     out_of_memory : int ;
@@ -80,6 +81,7 @@ let make ~meta ~config packages =
       { stotal ; per_package ;
         complete = !complete ;
         partial = !partial ;
+        failure = stotal - !complete - !partial ;
         incomplete = !incomplete ;
         timeout = !timeout ;
         out_of_memory = !out_of_memory ;
