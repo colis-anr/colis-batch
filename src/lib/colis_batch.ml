@@ -17,7 +17,7 @@ let load_package_report_summary_as_json = Report.Package.load_summary_as_json
 let save_package_report_summary_as_bin = Report.Package.save_summary_as_bin
 let load_package_report_summary_as_bin = Report.Package.load_summary_as_bin
 
-let combine_reports = Report.Batch.make
+let make_batch_report = Report.Batch.make
 
 let save_batch_report_as_json = Report.Batch.save_as_json
 let load_batch_report_as_json = Report.Batch.load_as_json

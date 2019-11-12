@@ -36,7 +36,10 @@ val load_package_report_summary_as_bin : prefix:string -> package:string -> Repo
 
 (** {2 A Batch of Packages} *)
 
-val combine_reports : Report.Package.summary list -> Report.Batch.t
+val make_batch_report :
+  start_time:float -> end_time:float ->
+  Report.Package.summary list ->
+  Report.Batch.t
 
 val save_batch_report_as_json : prefix:string -> Report.Batch.t -> unit
 val load_batch_report_as_json : prefix:string -> Report.Batch.t

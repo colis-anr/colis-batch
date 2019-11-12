@@ -6,7 +6,8 @@ type t =
     packages : Package.summary list }
 [@@deriving yojson { exn = true }]
 
-let make _ = assert false
+let make ~start_time ~end_time packages =
+  { start_time ; end_time ; packages }
 
 let save_as_json ~prefix report =
   report
