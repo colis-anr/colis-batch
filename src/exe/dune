@@ -1,4 +1,4 @@
 (executable
- (name colis_batch)
+ (name colis_batch_exe)
  (public_name colis-batch)
  (libraries colis-batch))
