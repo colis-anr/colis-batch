@@ -39,6 +39,11 @@ let rec sub start length = function
 
 let flat_map f l = map f l |> flatten
 
+let rec bd = function
+  | [] -> failwith "bd"
+  | [_] -> []
+  | h :: t -> h :: bd t
+
 let rec ft_opt = function
   | [] -> None
   | [e] -> Some e
