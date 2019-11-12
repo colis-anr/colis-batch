@@ -13,5 +13,7 @@ val sub : int -> int -> 'a list -> 'a list
 val bd : 'a list -> 'a list
 (** Returns the list without its last element. *)
 
+val ft : 'a list -> 'a
+
 val ft_opt : 'a list -> 'a option
 (** Returns the last element of a list, or [None] if the list is empty. *)

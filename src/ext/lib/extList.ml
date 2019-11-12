@@ -44,6 +44,11 @@ let rec bd = function
   | [_] -> []
   | h :: t -> h :: bd t
 
+let rec ft = function
+  | [] -> failwith "ft"
+  | [e] -> e
+  | _ :: t -> ft t
+
 let rec ft_opt = function
   | [] -> None
   | [e] -> Some e

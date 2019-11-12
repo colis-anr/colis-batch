@@ -137,7 +137,7 @@ let generate_maintscript ~prefix tap_package (report : t) maintscript =
 
 let generate_scenario_dot ~prefix tap_package name scenario =
   Colis_batch_report_common.with_formatter_to_file ~prefix
-    ((Common.path_from_tap tap_package) @ ["scenario"; Model.Scenarii.Name.to_string name; "flowchart.dot"])
+    (Common.path_from_tap (tap_package @ ["DUMMY", ["scenario"; Model.Scenarii.Name.to_string name; "flowchart.dot"]]))
   @@ fun fmt ->
   Model.Scenario.pp_ran_as_dot fmt scenario
 
@@ -146,7 +146,7 @@ let generate_scenario_state ~prefix tap_package name id state status =
   let id = string_of_int id in
   (
     Colis_batch_report_common.with_formatter_to_file ~prefix
-      ((Common.path_from_tap tap_package) @ ["scenario"; Model.Scenarii.Name.to_string name; status; id ^ ".dot"])
+      (Common.path_from_tap (tap_package @ ["DUMMY", ["scenario"; Model.Scenarii.Name.to_string name; status; id ^ ".dot"]]))
     @@ fun fmt ->
     let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
     Colis.Constraints.Clause.pp_sat_conj_as_dot
@@ -156,7 +156,7 @@ let generate_scenario_state ~prefix tap_package name id state status =
   (
     Common.with_formatter_to_html_report ~viz:true ~prefix
       (tap_package @ [
-          Model.Scenarii.Name.to_fancy_string name, ["scenario"; Model.Scenarii.Name.to_string name];
+          Model.Scenarii.Name.to_fancy_string name, ["scenario"; Model.Scenarii.Name.to_string name; "index.html"];
           status ^ " #" ^ id, [status; id ^ ".html"]])
     @@ fun fmt ->
     Common.pp_viz fmt (id ^ ".dot");
@@ -196,7 +196,7 @@ let generate ~standalone ~prefix (report : t) =
       pp_redirecting_index fmt
     );
   let tap = [Model.Package.name report.package,
-             ["package"; Model.Package.safe_name report.package]] in
+             ["package"; Model.Package.safe_name report.package; "index.html"]] in
   ( (* Index of the package. *)
     Common.with_formatter_to_html_report ~viz:true ~prefix tap @@ fun fmt ->
     pp_index ~standalone fmt report

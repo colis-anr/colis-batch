@@ -5,31 +5,43 @@ type tap = (string * string list) list
 
 let title_sep = " > "
 
-(* Pathes ALWAYS lead to a file. *)
+(* Pathes ALWAYS lead to a file. A tap may however be empty. *)
+
+let root_tap = List.cons ("Report", ["index.html"])
 
 let path_from_tap tap =
-  tap
-  |> List.map snd      (* Forget about the title. *)
-  |> List.map List.bd  (* Keep everything but the last file. *)
-  |> List.concat
+  let tap = root_tap tap in
+  (
+    tap
+    |> List.bd           (* For all except the last one: *)
+    |> List.map snd      (* Forget about the title. *)
+    |> List.map List.bd  (* Keep everything but the last file. *)
+    |> List.concat
+  ) @ (
+    tap
+    |> List.ft           (* For the last one: *)
+    |> snd               (* Keep everything. *)
+  )
 
 let raw_title_from_tap tap =
   tap
+  |> root_tap
   |> List.map fst       (* Keep only the title. *)
-  |> List.cons "Report" (* Add Report as first. *)
   |> String.concat title_sep (* Concatenate with the separator. *)
 
 let root_path_from_tap tap =
   tap
+  |> root_tap
   |> List.map snd
   |> List.map List.bd
   |> List.concat
   |> List.map (function "." -> "." | ".." -> assert false | _ -> "..")
+  |> List.cons "."
 
 let html_title_from_tap tap =
   let root_path = root_path_from_tap tap in
   tap
-  |> List.cons ("Report", ["index.html"])
+  |> root_tap
   |> List.fold_left
     (fun (full_title, full_path) (title, path) ->
        ((spf "<a href=\"%s\">%s</a>" (Filename.concat_l (full_path @ path)) title) :: full_title,
