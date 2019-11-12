@@ -1,0 +1,6 @@
+(library
+ (name colis_batch_report_html)
+ (public_name colis-batch.report.html)
+ (libraries colis-batch.ext)
+ (preprocess (pps ppx_blob))
+ (preprocessor_deps (source_tree static)))
