@@ -10,6 +10,8 @@ let analyse_package = Engine.Package.analyse
 let save_package_report_as_json = Report.Package.save_as_json
 let load_package_report_as_json = Report.Package.load_as_json
 
+let generate_html_package_report = Report.Html.Package.generate
+
 let summarize_package_report = Report.Package.summarize
 
 let save_package_report_summary_as_json = Report.Package.save_summary_as_json
@@ -22,3 +24,5 @@ let make_batch_report = Report.Batch.make
 
 let save_batch_report_as_json = Report.Batch.save_as_json
 let load_batch_report_as_json = Report.Batch.load_as_json
+
+let generate_html_batch_report = Report.Html.Batch.generate

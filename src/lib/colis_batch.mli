@@ -30,6 +30,8 @@ val analyse_package : config:Config.t -> Model.Package.t -> Report.Package.t
 val save_package_report_as_json : prefix:string -> Report.Package.t -> unit
 val load_package_report_as_json : prefix:string -> package:string -> Report.Package.t
 
+val generate_html_package_report : standalone:bool -> prefix:string -> Report.Package.t -> unit
+
 val summarize_package_report : Report.Package.t -> Report.Package.summary
 
 val save_package_report_summary_as_json : prefix:string -> Report.Package.summary -> unit
@@ -46,3 +48,5 @@ val make_batch_report :
 
 val save_batch_report_as_json : prefix:string -> Report.Batch.t -> unit
 val load_batch_report_as_json : prefix:string -> Report.Batch.t
+
+val generate_html_batch_report : prefix:string -> Report.Batch.t -> unit
