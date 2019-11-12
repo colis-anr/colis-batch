@@ -11,3 +11,4 @@ module Unix = ExtUnix
 module Result = ExtResult
 module MultiProcess = ExtMultiProcess
 module Fun = ExtFun
+module Filesystem = ExtFilesystem
