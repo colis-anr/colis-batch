@@ -3,7 +3,8 @@ type t =
     cpu_timeout : float ;
     memory_limit : string ;
     report : string ;
-    external_sources : string }
+    external_sources : string ;
+    contents : string list }
 [@@deriving yojson]
 
 let default =
@@ -11,4 +12,5 @@ let default =
     cpu_timeout = 60. ;
     memory_limit = "1G" ;
     report = "report" ;
-    external_sources = "external_sources" }
+    external_sources = "external_sources" ;
+    contents = ["contents"] }

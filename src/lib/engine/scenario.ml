@@ -82,11 +82,29 @@ let run ~cpu_timeout ~package scenario =
   let rec run states (scenario : (unit, unit) t) : (ran_leaf, ran_node) t =
     match scenario with
     | Status ((), status) -> Status (states, status)
+
     | Unpack ((), on_success) ->
-      if states = [] then
-        Unpack (make_ran_node [], run [] on_success)
-      else
-        Unpack (make_ran_node states, run states on_success) (* FIXME!!! *)
+      (
+        let unpack_script =
+          let open Colis.Language.Syntax in
+          Model.Package.content package
+          |> List.map (fun file -> ICallUtility ("colis_internal_unsafe_touch", [SLiteral ("/"^file), DontSplit]))
+          |> List.fold_left (fun s1 s2 -> ISequence (s1, s2)) (ICallUtility ("true", []))
+          |> (fun instruction -> { instruction ; function_definitions = [] })
+        in
+        let sym_states = List.map (Colis.Symbolic.to_symbolic_state ~vars:[] ~arguments:[]) states in
+        let (success, _error, incomplete) =
+          Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
+          Colis.Symbolic.interp_program
+            ~loop_limit:200
+            ~stack_size:200
+            ~argument0:"colis_internal_unpack"
+            sym_states unpack_script
+        in
+        assert (incomplete = []);
+        Unpack (make_ran_node states, run success on_success)
+      )
+
     | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
       if states = [] then
         RunScript (make_ran_node [], (script, cmd_line_arguments),

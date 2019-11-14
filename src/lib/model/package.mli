@@ -6,6 +6,8 @@ type t [@@deriving yojson]
 val path : t -> string
 val name : t -> name
 val version : t -> version
+val content : t -> string list
+
 val safe_name : t -> string
 
 val maintscript : t -> Maintscript.Key.t -> Maintscript.t option
