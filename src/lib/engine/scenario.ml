@@ -86,11 +86,11 @@ let run ~cpu_timeout ~package scenario =
     | Unpack ((), on_success) ->
       (
         let unpack_script =
-          let open Colis.Language.Syntax in
+          let open Colis.Language.SyntaxHelpers in
           Model.Package.content package
-          |> List.map (fun file -> ICallUtility ("colis_internal_unsafe_touch", [SLiteral ("/"^file), DontSplit]))
-          |> List.fold_left (fun s1 s2 -> ISequence (s1, s2)) (ICallUtility ("true", []))
-          |> (fun instruction -> { instruction ; function_definitions = [] })
+          |> List.map (fun file -> icallutility "colis_internal_unsafe_touch" [lliteral ("/"^file)])
+          |> List.cons (icallutility "true" []) (* in case of empty list *)
+          |> isequence_l |> program
         in
         let sym_states = List.map (Colis.Symbolic.to_symbolic_state ~vars:[] ~arguments:[]) states in
         let (success, _error, incomplete) =
