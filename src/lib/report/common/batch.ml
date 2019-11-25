@@ -33,6 +33,7 @@ type t =
   { meta : Meta.t ;
     config : Colis_batch_config.t ;
     numbers : numbers ;
+    unsupported_utilities : (string * int * float) list ;
     packages : Package.summary list }
 [@@deriving yojson { exn = true }]
 
@@ -125,7 +126,38 @@ let make ~meta ~config packages =
     in
     { packages = nb_packages ; scenarios ; scripts }
   in
-  { meta ; config ; numbers ; packages }
+  let unsupported_utilities =
+    let utilities = Hashtbl.create 8 in
+    List.iter
+      (fun package ->
+         Model.Package.iter_maintscripts
+           (fun script ->
+              if Model.Maintscript.has_error script then
+                ()
+              else
+                let unsupported =
+                  script
+                  |> Model.Maintscript.utilities
+                  |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
+                in
+                let len = foi (List.length unsupported) in
+                List.iter
+                  (fun utility ->
+                     let (t, v) =
+                       match Hashtbl.find_opt utilities utility with
+                       | None -> (0, 0.)
+                       | Some (t, v) -> (t, v)
+                     in
+                     Hashtbl.replace utilities utility (1 + t, 1./.len +. v))
+                  unsupported)
+           package.Package.package)
+      packages;
+    Hashtbl.to_seq utilities
+    |> Seq.map (fun (name, (t, v)) -> (name, t, significant ~precision:2 v))
+    |> List.of_seq
+    |> List.sort (fun (_, _, v1) (_, _, v2) -> compare v2 v1)
+  in
+  { meta ; config ; numbers ; unsupported_utilities ; packages }
 
 let save_as_json ~prefix report =
   report
