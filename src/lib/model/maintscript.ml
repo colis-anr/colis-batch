@@ -77,32 +77,40 @@ let error m =
 let has_error m =
   error m <> None
 
-let colis m =
+let colis ?(cmd_line_arguments=["DUM"; "MY"]) m =
   match m.content with
   | Ok shell ->
-    Colis.convert_shell_file ~cmd_line_arguments:["DUM"; "MY"] shell
+    Colis.convert_shell_file ~cmd_line_arguments shell
+    |> Colis.embellish_colis
   | _ ->
     raise (Invalid_argument "Maintscript.colis")
 
+let utilities script =
+  let visitor = object
+    inherit [_] Colis.Language.SyntaxHelpers.reduce
+
+    method zero = []
+    method plus = (@)
+
+    method! visit_ICallUtility () name _args = [name]
+  end in
+  visitor#visit_program () (colis script)
+  |> List.sort_uniq String.compare
+
 let interp ~cmd_line_arguments ~states ~package_name m =
-  match m.content with
-  | Ok shell ->
-    (* Assertion: it works because we have converted before (with other cmd line
-       arguments). *)
-    let colis = Colis.convert_shell_file ~cmd_line_arguments shell in
-    let sym_states =
-      List.map
-        (Colis.Symbolic.to_symbolic_state
-           ~vars:[
-             "DPKG_MAINTSCRIPT_NAME", (Key.to_string m.key) ;
-             "DPKG_MAINTSCRIPT_PACKAGE", package_name ;
-           ] (* FIXME *)
-           ~arguments:cmd_line_arguments)
-        states
-    in
-    Colis.Symbolic.interp_program
-      ~loop_limit:200
-      ~stack_size:200
-      ~argument0:(Key.to_string m.key)
-      sym_states colis
-  | Error _ -> raise (Invalid_argument "Maintscript.interp")
+  let colis = colis ~cmd_line_arguments m in
+  let sym_states =
+    List.map
+      (Colis.Symbolic.to_symbolic_state
+         ~vars:[
+           "DPKG_MAINTSCRIPT_NAME", (Key.to_string m.key) ;
+           "DPKG_MAINTSCRIPT_PACKAGE", package_name ;
+         ] (* FIXME *)
+         ~arguments:cmd_line_arguments)
+      states
+  in
+  Colis.Symbolic.interp_program
+    ~loop_limit:200
+    ~stack_size:200
+    ~argument0:(Key.to_string m.key)
+    sym_states colis

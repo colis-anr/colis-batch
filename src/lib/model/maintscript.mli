@@ -36,7 +36,14 @@ val error : t -> error option
 
 val error_to_string : error -> string
 
-val colis : t -> Colis.colis
+val colis : ?cmd_line_arguments:string list -> t -> Colis.colis
+(** Returns the scriprt as Colis, using the given command line
+   arguments, or dummy ones if not provided. Raises [Failure
+   "Maintscript.colis"] if the script cannot be translated. *)
+
+val utilities : t -> string list
+(** List of utilities called by the script. Raises [Failure
+   "Maintscript.colis"] if the script cannot be translated. *)
 
 val interp :
   cmd_line_arguments:string list ->
@@ -46,3 +53,5 @@ val interp :
   Colis.Symbolic.Semantics.state list
   * Colis.Symbolic.Semantics.state list
   * Colis.Symbolic.Semantics.state list
+(** Interprets the script. Raises [Failure "Maintscript.colis"] if the
+   script cannot be translated. *)
