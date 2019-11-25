@@ -2,40 +2,58 @@ open Colis_batch_ext
 module Model = Colis_batch_model
 open Colis_batch_report_common.Batch
 
-let percentage a b = 100 * a / b (* FIXME *)
+let percentage a b =
+  100. *. (significant ~precision:2 ((foi a) /. (foi b)))
 
-let pp_scenarios_summary fmt numbers =
-  fpf fmt "<p>Out of a total of %d scenarios (%d packages × %d scenarios) that attempted to run:</p><ul>"
-    numbers.scenarios.stotal numbers.packages numbers.scenarios.per_package;
-  fpf fmt "<li>%d (%d%% of all scenarios) were ran completely,</li>"
-    numbers.scenarios.complete (percentage numbers.scenarios.complete numbers.scenarios.stotal);
-  fpf fmt "<li>%d (%d%%) were ran partially,</li>"
-    numbers.scenarios.partial (percentage numbers.scenarios.partial numbers.scenarios.stotal);
-  fpf fmt "<li> and %d (%d%%) could not be run at all.</li></ul>"
-    numbers.scenarios.failure (percentage numbers.scenarios.failure numbers.scenarios.stotal);
+let pp_details_list fmt ~text_after ~total cases =
+  fpf fmt "<p>Out of a total of <strong>%d</strong> %s" total text_after;
+  let cases =
+    cases
+    |> List.filter (fun c -> fst c <> 0)
+    |> List.sort (fun c1 c2 -> compare (fst c1) (fst c2))
+  in
+  match cases with
+  | [] -> failwith "pp_details_list"
+  | [nb, text] ->
+    fpf fmt ", %d (%g%%) %s.</p>"
+      nb (percentage nb total) text
+  | (nb, text) :: cases ->
+    fpf fmt ":</p><ul>";
+    List.iter
+      (fun (nb, text) ->
+         fpf fmt "<li><strong>%d</strong> (%g%%) %s,</li>"
+           nb (percentage nb total) text)
+      (List.rev cases);
+    fpf fmt "<li>and <strong>%d</strong> (%g%%) %s.</li></ul>"
+      nb (percentage nb total) text
 
-  fpf fmt "<p>There were %d problems:</p><ul>" numbers.scenarios.problems;
-  fpf fmt "<li>%d scripts not converted (%d%% of all problems),</li>"
-    numbers.scenarios.not_converted (percentage numbers.scenarios.not_converted numbers.scenarios.problems);
-  fpf fmt "<li>%d timeouts (%d%%),</li>"
-    numbers.scenarios.timeout (percentage numbers.scenarios.timeout numbers.scenarios.problems);
-  fpf fmt "<li>%d out of memory (%d%%),</li>"
-    numbers.scenarios.out_of_memory (percentage numbers.scenarios.out_of_memory numbers.scenarios.problems);
-  fpf fmt "<li>%d incompletness (%d%%),</li>"
-    numbers.scenarios.incomplete (percentage numbers.scenarios.incomplete numbers.scenarios.problems);
-  fpf fmt "<li>%d unsupported utilities (%d%%),</li>"
-    numbers.scenarios.unsupported_utility (percentage numbers.scenarios.unsupported_utility numbers.scenarios.problems);
-  fpf fmt "<li>and %d unexpected exceptions (%d%%).</li></ul>"
-    numbers.scenarios.unexpected (percentage numbers.scenarios.unexpected numbers.scenarios.problems)
+let pp_scenarios_summary fmt (numbers: numbers) =
+  pp_details_list fmt
+    ~text_after:(spf "scenarios (%d packages × %d scenarios)" numbers.packages numbers.scenarios.per_package)
+    ~total:numbers.scenarios.stotal
+    [ numbers.scenarios.complete, "were ran completely" ;
+      numbers.scenarios.partial, "were ran partially" ;
+      numbers.scenarios.failure, "could not be run at all" ];
+
+  pp_details_list fmt
+    ~text_after:"problems"
+    ~total:numbers.scenarios.problems
+    [ numbers.scenarios.not_converted, "scripts not converted" ;
+      numbers.scenarios.timeout, "timeouts" ;
+      numbers.scenarios.out_of_memory, "out of memory" ;
+      numbers.scenarios.incomplete, "incompletness" ;
+      numbers.scenarios.unsupported_utility, "unsupported utilities (<a href=\"unsupported-utilities.html\">details</a>)" ;
+      numbers.scenarios.unexpected, "unexpected exceptions" ]
 
 let pp_scripts_summary fmt numbers =
-  fpf fmt "Out of a total of %d scripts:<ul>" numbers.total;
-  fpf fmt "<li>%d provoked an error during parsing,</li>" numbers.parsing_errored;
-  fpf fmt "<li>%d were rejected by parsing,</li>" numbers.parsing_rejected;
-  fpf fmt "<li>%d provoked an error during conversion,</li>" numbers.conversion_errored;
-  fpf fmt "<li>%d were rejected by conversion,</li>" numbers.conversion_rejected;
-  fpf fmt "<li>and %d were accepted.</li>" numbers.accepted;
-  fpf fmt "</ul>"
+  pp_details_list fmt
+    ~text_after:"scripts"
+    ~total:numbers.total
+    [ numbers.parsing_errored, "provoked an error during parsing" ;
+      numbers.parsing_rejected, "were rejected by parsing" ;
+      numbers.conversion_errored , "provoked an error during conversion" ;
+      numbers.conversion_rejected , "were rejected by conversion" ;
+      numbers.accepted, "were accepted" ]
 
 let pp_index fmt report =
   fpf fmt "<h2>Configuration</h2>";
@@ -120,6 +138,24 @@ let pp_scenario fmt report scenario =
        fpf fmt "</ul>")
     package_by_status
 
+let pp_unsupported fmt uu =
+  fpf fmt "<table><tr><th>Utility</th><th>Occurrences</th><th>Score</th></tr>";
+  List.iter
+    (fun (name, t, v) ->
+       fpf fmt "<tr><td>%s</td><td>%d</td><td>%g</td></tr>"
+         name t v)
+    uu;
+  fpf fmt "</table>"
+
+let generate_unsupported ~prefix report =
+  (
+    Common.with_formatter_to_html_report
+      ~prefix
+      ["Unsupported Utilities", ["unsupported-utilities.html"]]
+    @@ fun fmt ->
+    pp_unsupported fmt report.unsupported_utilities
+  )
+
 let generate_scenario ~prefix report name scenario =
   (
     Colis_batch_report_common.with_formatter_to_file ~prefix
@@ -145,4 +181,5 @@ let generate ~prefix report =
   List.iter
     (fun (name, scenario) ->
        generate_scenario ~prefix report name scenario)
-    Model.Scenarii.all
+    Model.Scenarii.all;
+  generate_unsupported ~prefix report

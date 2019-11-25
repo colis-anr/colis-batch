@@ -103,7 +103,13 @@ let pp_maintscript_colis fmt maintscript =
     pp_status fmt "Accepted";
     fpf fmt "<h2>Colis script</h2><pre><code>";
     Colis.pp_print_colis fmt (Model.Maintscript.colis maintscript);
-    fpf fmt "</code></pre>"
+    fpf fmt "</code></pre>";
+    fpf fmt "<p>Present utilities: %a.</p>"
+      (Format.pp_print_list
+         ~pp_sep:(fun fmt () -> fpf fmt ", ")
+         (fun fmt util -> fpf fmt "<code>%s</code>" util))
+      (Model.Maintscript.utilities maintscript)
+
   | Some error ->
     match error with
     | ParsingErrored msg ->
