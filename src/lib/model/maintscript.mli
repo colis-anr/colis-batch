@@ -27,9 +27,9 @@ val parse : string -> t
 
 type error =
   | ParsingErrored of string
-  | ParsingRejected
+  | ParsingRejected of Lexing.position
   | ConversionErrored of string
-  | ConversionRejected of string
+  | ConversionRejected of (Morsmall.Location.position * string)
 
 val has_error : t -> bool
 val error : t -> error option

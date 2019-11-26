@@ -113,7 +113,7 @@ let make ~meta ~config packages =
              (match Model.Maintscript.error script with
               | None -> accepted
               | Some (ParsingErrored _) -> parsing_errored
-              | Some (ParsingRejected) -> parsing_rejected
+              | Some (ParsingRejected _) -> parsing_rejected
               | Some (ConversionErrored _) -> conversion_errored
               | Some (ConversionRejected _) -> conversion_rejected))
         scripts;

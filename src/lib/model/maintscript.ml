@@ -30,16 +30,16 @@ end
 
 type error =
   | ParsingErrored of string
-  | ParsingRejected
+  | ParsingRejected of Morsmall.Location.lexing_position (* = Lexing.position but Morsmall includes yojson (de)serialisers *)
   | ConversionErrored of string
-  | ConversionRejected of string
+  | ConversionRejected of (Morsmall.Location.position * string)
 [@@deriving yojson]
 
 let error_to_string = function
   | ParsingErrored msg -> "parsing errored: " ^ msg
-  | ParsingRejected -> "parsing rejected"
+  | ParsingRejected _pos -> "parsing rejected" (* FIXME: pos *)
   | ConversionErrored msg -> "conversion errored: " ^ msg
-  | ConversionRejected msg -> "conversion rejected: " ^ msg
+  | ConversionRejected (_pos, msg) -> "conversion rejected: " ^ msg (* FIXME: pos *)
 
 type t =
   { key : Key.t ;
@@ -61,10 +61,10 @@ let parse path =
         let _colis = Colis.Language.FromShell.program__to__program ~cmd_line_arguments:["DUM"; "MY"] shell in
         Ok shell
       with
-      | Colis.Internals.Errors.ConversionError msg -> Error (ConversionRejected msg)
+      | Colis.Internals.Errors.ConversionError (pos, msg) -> Error (ConversionRejected (pos, msg))
       | exn -> Error (ConversionErrored (Printexc.to_string exn))
     with
-    | Morsmall.SyntaxError _pos -> Error ParsingRejected
+    | Morsmall.SyntaxError pos -> Error (ParsingRejected pos)
     | exn -> Error (ParsingErrored (Printexc.to_string exn))
   in
   { key; content }

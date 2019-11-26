@@ -11,9 +11,9 @@ let pp_maintscript_status fmt maintscript =
      | Some e ->
        match e with
        | ParsingErrored msg -> ("errored", "Error in parsing", msg)
-       | ParsingRejected -> ("rejected", "Rejected by parsing", "")
+       | ParsingRejected _pos -> ("rejected", "Rejected by parsing", "") (* FIXME: pos *)
        | ConversionErrored msg -> ("errored", "Error in conversion", msg)
-       | ConversionRejected msg -> ("rejected", "Rejected by conversion", msg))
+       | ConversionRejected (_pos, msg) -> ("rejected", "Rejected by conversion", msg)) (* FIXME: pos *)
   in
   fpf fmt "<dt><a href=\"%s\">%s</a></dt><dd class=\"%s\">%s %s</dd>"
     ("script/" ^ Model.Maintscript.key_as_string maintscript ^ ".html")
@@ -114,12 +114,12 @@ let pp_maintscript_colis fmt maintscript =
     match error with
     | ParsingErrored msg ->
       pp_status fmt ("Parsing errored with: " ^ msg)
-    | ParsingRejected ->
-      pp_status fmt "Parsing rejected"
+    | ParsingRejected _pos ->
+      pp_status fmt "Parsing rejected" (* FIXME: pos *)
     | ConversionErrored msg ->
       pp_status fmt ("Conversion errored with: " ^ msg)
-    | ConversionRejected msg ->
-      pp_status fmt ("Conversion rejected with: " ^ msg)
+    | ConversionRejected (_pos, msg) ->
+      pp_status fmt ("Conversion rejected with: " ^ msg) (* FIXME: pos *)
 
 let pp_maintscript_shell fmt (report : t) maintscript =
   fpf fmt "<hr/><h2>Original Shell script</h2><pre><code class=\"bash\">";
