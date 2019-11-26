@@ -12,6 +12,8 @@
 (library
  (name colis_batch_config)
  (public_name colis-batch.config)
- (libraries yojson)
+ (libraries
+  yojson
+  colis-batch.ext)
  (preprocess (pps ppx_deriving_yojson))
  (modules colis_batch_config))
