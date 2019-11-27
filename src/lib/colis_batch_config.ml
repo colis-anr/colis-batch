@@ -92,8 +92,8 @@ let check_config () =
   if not (!config.workers > 0) then
     raise (Arg.Bad (spf "Workers number (%d) must be positive." !config.workers));
 
-  if (!config.package = "") <> (!config.corpus = "") then
-    raise (Arg.Bad (spf "Package and Corpus cannot be both set or unset at the same time."));
+  if (!config.package = "") = (!config.corpus = "") then
+    raise (Arg.Bad (spf "Package and corpus cannot be both set or unset at the same time."));
 
   if not (!config.package = "") && not Sys.(file_exists !config.package) then
     raise (Arg.Bad (spf "Package (%s), when set, must exist." !config.package));

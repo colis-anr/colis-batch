@@ -1,10 +1,6 @@
-open Colis_batch
+open Colis_batch open Colis_batch_ext
 
-let config = Config.default
-
-let () = assert (not (Sys.file_exists config.report))
-let () = assert (Sys.file_exists config.external_sources)
-let () = assert (List.for_all Sys.file_exists config.contents)
+let config = !Config.config
 
 let () =
   Colis.Internals.Options.cpu_time_limit := config.cpu_timeout;
@@ -13,33 +9,45 @@ let () =
   Colis.Internals.Options.fail_on_unknown_utilities := true
 
 let () =
-  Format.eprintf "Reading contents files... @?";
-  List.iter Contents.scan config.contents;
-  Format.eprintf "done.@."
+  if config.contents <> "" then
+    (
+      Format.eprintf "Reading contents files... @?";
+      Contents.scan config.contents;
+      Format.eprintf "done.@."
+    )
+
+let package_pathes =
+  if config.corpus <> "" then
+    (
+      config.corpus
+      |> Sys.readdir
+      |> Array.to_list
+      |> List.sort compare
+      |> List.map (Filename.concat config.corpus)
+    )
+  else
+    (
+      assert (config.package <> "");
+      [config.package]
+    )
 
 let () =
   let (meta, reports) =
     Report.Meta.while_gathering_meta @@ fun () ->
-    Sys.argv
-    |> Array.to_list
-    |> List.tl
-    |> List.map
+    MultiProcess.map_p
+      ~workers:config.workers
       (fun package_path ->
-         Format.eprintf "Parsing \"%s\"... @?" package_path;
+         Format.eprintf "%s@." package_path;
          let package_name =
            let name_version = Filename.basename package_path in
            let l = String.index name_version '_' in
            String.sub name_version 0 l
          in
          let package = parse_package_from_dir ~content:(Contents.get_files package_name) package_path in
-         Format.eprintf "done@.";
-         package)
-    |> List.mapi
-      (fun i package ->
-         Format.eprintf "Analysing #%d: %s... @?" (i+1) (Model.Package.name package);
          let report = analyse_package ~config package in
-         Format.eprintf "done@.";
          report)
+      package_pathes
+    |> Lwt_main.run
   in
   match reports with
   | [] -> failwith "no input"
