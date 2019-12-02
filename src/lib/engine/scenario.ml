@@ -88,7 +88,7 @@ let run ~cpu_timeout ~package scenario =
         let unpack_script =
           let open Colis.Language.SyntaxHelpers in
           Model.Package.content package
-          |> List.map (fun file -> icallutility "colis_internal_unsafe_touch" [lliteral ("/"^file)])
+          |> List.map (fun file -> icallutility "colis_internal_unsafe_touch" [lliteral file])
           |> List.cons (icallutility "true" []) (* in case of empty list *)
           |> isequence_l |> program
         in

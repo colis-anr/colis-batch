@@ -5,6 +5,8 @@ module Report = Colis_batch_report
 let analyse ~config package =
   let (meta, scenarii) =
     Report.Meta.while_gathering_meta @@ fun () ->
+    Colis.Internals.Options.with_package_name (Model.Package.name package) @@ fun () ->
+    Colis.Internals.Options.with_contents (Model.Package.content package) @@ fun () ->
     List.map
       (fun (name, scenario) ->
          try

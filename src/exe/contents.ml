@@ -41,7 +41,7 @@ let scan filename =
         else register (String.sub s 0 (i+1)) packages
     and register filename packages =
       List.iter
-        (function package -> Hashtbl.add table package filename)
+        (function package -> Hashtbl.add table package ("/"^filename))
         packages;
     in let linelength = String.length s
        in if linelength > 0
