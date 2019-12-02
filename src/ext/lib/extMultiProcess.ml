@@ -95,3 +95,7 @@ let map_p ~workers f l =
     a
     []
   |> Lwt.return
+
+let iter_p ~workers f l =
+  let%lwt _ = map_p ~workers f l in
+  Lwt.return_unit

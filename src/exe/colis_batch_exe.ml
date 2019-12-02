@@ -54,7 +54,10 @@ let () =
   | [report] ->
     generate_html_package_report ~standalone:true ~prefix:config.report report
   | reports ->
-    List.iter (generate_html_package_report ~standalone:false ~prefix:config.report) reports;
+    MultiProcess.iter_p
+      ~workers:config.workers
+      (generate_html_package_report ~standalone:false ~prefix:config.report) reports
+    |> Lwt_main.run;
     let report =
       reports
       |> List.map summarize_package_report
