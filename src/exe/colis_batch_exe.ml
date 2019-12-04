@@ -76,13 +76,22 @@ let () =
 
 (* ============================== [ Process ] =============================== *)
 
-let pad_to y x =
+let pad_int_left_to y x =
   let len x = iof (ceil (log10 (foi x +. 1.))) in
   spf "%s%d" (String.make (max 0 (len y - len x)) ' ') x
 
+let pad_string_right_to y x =
+  spf "%s%s" x (String.make (max 0 (String.length y - String.length x)) ' ')
+
+let previous = ref ""
+
 let process_package i package_path =
-  let i = i + 1 in
-  Format.eprintf "\r  [%s/%d; %3d%%] .../%s   @?" (pad_to nb_packages i) nb_packages (100 * i / nb_packages) (Filename.basename package_path);
+  let () =
+    let i = i + 1 in
+    let str = Filename.basename package_path in
+    Format.eprintf "\r  [%s/%d; %3d%%] .../%s@?" (pad_int_left_to nb_packages i) nb_packages (100 * i / nb_packages) (pad_string_right_to !previous str);
+    previous := str
+  in
   let package_name =
     let name_version = Filename.basename package_path in
     let l = String.index name_version '_' in
@@ -115,10 +124,16 @@ let reports = (* Append cached reports to computed ones *)
 
 (* =============================== [ Report ] =============================== *)
 
+let () = previous := ""
+
 let generate_one_html_package_report i (report : Report.Package.t) =
-  let i = i + 1 in
-  Format.eprintf "\r  [%s/%d; %3d%%] %s   @?" (pad_to nb_packages i) nb_packages (100 * i / nb_packages)
-    (Model.Package.name report.Report.Package.package);
+  let () =
+    let i = i + 1 in
+    let str = Model.Package.name report.Report.Package.package in
+    Format.eprintf "\r  [%s/%d; %3d%%] %s   @?" (pad_int_left_to nb_packages i) nb_packages (100 * i / nb_packages)
+      (pad_string_right_to !previous str);
+    previous := str
+  in
   generate_html_package_report ~standalone:false ~prefix:config.report report
 
 let () = Format.eprintf "Generating report...@."
