@@ -27,17 +27,12 @@ val parse_package_from_dir : content:string list -> string -> Model.Package.t
 
 val analyse_package : config:Config.t -> Model.Package.t -> Report.Package.t
 
-val save_package_report_as_json : prefix:string -> Report.Package.t -> unit
-val load_package_report_as_json : prefix:string -> package:string -> Report.Package.t
+val save_package_report_as_bin : cache:string -> Report.Package.t -> unit
+val load_package_report_as_bin : cache:string -> string -> Report.Package.t
 
 val generate_html_package_report : standalone:bool -> prefix:string -> Report.Package.t -> unit
 
 val summarize_package_report : Report.Package.t -> Report.Package.summary
-
-val save_package_report_summary_as_json : prefix:string -> Report.Package.summary -> unit
-val load_package_report_summary_as_json : prefix:string -> package:string -> Report.Package.summary
-val save_package_report_summary_as_bin : prefix:string -> Report.Package.summary -> unit
-val load_package_report_summary_as_bin : prefix:string -> package:string -> Report.Package.summary
 
 (** {2 A Batch of Packages} *)
 
@@ -45,9 +40,6 @@ val make_batch_report :
   meta:Report.Meta.t -> config:Config.t ->
   Report.Package.summary list ->
   Report.Batch.t
-
-val save_batch_report_as_json : prefix:string -> Report.Batch.t -> unit
-val load_batch_report_as_json : prefix:string -> Report.Batch.t
 
 val enrich_batch_report : Report.Batch.t -> Report.Batch.rich
 

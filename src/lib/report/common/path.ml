@@ -35,3 +35,16 @@ let package_summary_json_file ~prefix ~package =
 
 let package_summary_bin_file ~prefix ~package =
   package_dir ~prefix ~package |> bin_file "summary"
+
+let get_lock_on filename =
+  let oc = open_out_gen [Open_creat; Open_excl] 0o777 (filename ^ ".lock") in
+  close_out oc
+
+let free_lock_on filename =
+  Sys.remove (filename ^ ".lock")
+
+let with_lock_on filename f =
+  get_lock_on filename;
+  let v = try Ok (f ()) with exn -> Error exn in
+  free_lock_on filename;
+  match v with Ok v -> v | Error exn -> raise exn

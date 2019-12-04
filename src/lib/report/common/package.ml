@@ -1,3 +1,4 @@
+open Colis_batch_ext
 module Model = Colis_batch_model
 
 type t =
@@ -10,19 +11,20 @@ type t =
 let make ~meta ~config package scenarii =
   { meta ; config ; package ; scenarii }
 
-let save_as_json ~prefix report =
-  let path =
-    Path.package_json_file ~prefix
-      ~package:(Model.Package.safe_name report.package)
-  in
-  report
-  |> to_yojson
-  |> Yojson.Safe.to_file path
+let save_as_bin ~cache (report : t) =
+  let path = Filename.concat cache (spf "%x.bin" (Hashtbl.hash report)) in
+  Path.with_lock_on path @@ fun () ->
+  let oc = open_out path in
+  Marshal.to_channel oc report [];
+  close_out oc
 
-let load_as_json ~prefix ~package =
-  let path = Path.package_json_file ~prefix ~package in
-  Yojson.Safe.from_file path
-  |> of_yojson_exn
+let load_as_bin ~cache file : t =
+  let path = Filename.concat cache file in
+  Path.with_lock_on path @@ fun () ->
+  let ic = open_in path in
+  let v = Marshal.from_channel ic in
+  close_in ic;
+  v
 
 (* Summary version *)
 
@@ -38,32 +40,3 @@ let summarize (full : t) =
     config = full.config ;
     package = full.package ;
     scenarii = List.map (fun (name, ran) -> (name, Model.Scenario.summarize ran)) full.scenarii }
-
-let save_summary_as_json ~prefix report =
-  let path =
-    Path.package_json_file ~prefix
-      ~package:(Model.Package.safe_name report.package)
-  in
-  report
-  |> summary_to_yojson
-  |> Yojson.Safe.to_file path
-
-let load_summary_as_json ~prefix ~package =
-  let path = Path.package_json_file ~prefix ~package in
-  Yojson.Safe.from_file path
-  |> summary_of_yojson_exn
-
-let save_summary_as_bin ~prefix (report : summary) =
-  let path =
-    Path.package_bin_file ~prefix
-      ~package:(Model.Package.safe_name report.package)
-  in
-  let oc = open_out path in
-  Marshal.to_channel oc report []
-
-let load_summary_as_bin ~prefix ~package : summary =
-  let path = Path.package_bin_file ~prefix ~package in
-  let ic = open_in path in
-  let v = Marshal.from_channel ic in
-  close_in ic;
-  v

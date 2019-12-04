@@ -8,7 +8,8 @@ type t =
     mutable external_sources : string ;
     mutable package : string ;
     mutable corpus : string ;
-    mutable contents : string }
+    mutable contents : string ;
+    mutable cache : string }
 [@@deriving yojson {exn=true}]
 
 let default () =
@@ -19,7 +20,8 @@ let default () =
     external_sources = "" ;
     package = "" ;
     corpus = "" ;
-    contents = "" }
+    contents = "" ;
+    cache = "" }
 
 let config = ref (default ())
 let default = default ()
@@ -65,6 +67,10 @@ let speclist =
     "--workers",
     Int (fun i -> !config.workers <- i),
     spf "NB Sets the number of workers (default: %d)" default.workers;
+
+    "--cache",
+    String (fun s -> !config.cache <- s),
+    spf "DIR Sets the cache to be DIR (default: %s)" default.cache;
 
     "--save-config",
     String save_config_to_file,
