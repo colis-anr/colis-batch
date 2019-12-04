@@ -49,4 +49,6 @@ val make_batch_report :
 val save_batch_report_as_json : prefix:string -> Report.Batch.t -> unit
 val load_batch_report_as_json : prefix:string -> Report.Batch.t
 
-val generate_html_batch_report : prefix:string -> Report.Batch.t -> unit
+val enrich_batch_report : Report.Batch.t -> Report.Batch.rich
+
+val generate_html_batch_report : prefix:string -> Report.Batch.rich -> unit

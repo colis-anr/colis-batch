@@ -25,4 +25,6 @@ let make_batch_report = Report.Batch.make
 let save_batch_report_as_json = Report.Batch.save_as_json
 let load_batch_report_as_json = Report.Batch.load_as_json
 
+let enrich_batch_report = Report.Batch.enrich
+
 let generate_html_batch_report = Report.Html.Batch.generate

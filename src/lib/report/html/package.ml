@@ -108,7 +108,7 @@ let pp_maintscript_colis fmt maintscript =
       (Format.pp_print_list
          ~pp_sep:(fun fmt () -> fpf fmt ", ")
          (fun fmt util -> fpf fmt "<code>%s</code>" util))
-      (Model.Maintscript.utilities maintscript)
+      (Model.Maintscript.utilities maintscript |> List.map fst)
 
   | Some error ->
     match error with

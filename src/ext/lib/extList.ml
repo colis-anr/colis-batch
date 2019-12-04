@@ -1,11 +1,17 @@
 include List
 
-let rec update_assoc key value = function
-  | [] -> failwith "ExtList.update_assoc"
-  | (key', _) :: rest when key = key' ->
-    (key, value) :: rest
+let rec update_assoc key update = function
+  | [] ->
+    (match update None with
+     | None -> []
+     | Some value -> [key, value])
   | (key', value') :: rest ->
-    (key', value') :: update_assoc key value rest
+    if key = key' then
+      match update (Some value') with
+      | None -> rest
+      | Some value' -> (key', value') :: rest
+    else
+      (key', value') :: update_assoc key update rest
 
 let rec map_filter f = function
   | [] -> []

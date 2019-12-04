@@ -86,16 +86,29 @@ let colis ?(cmd_line_arguments=["DUM"; "MY"]) m =
     raise (Invalid_argument "Maintscript.colis")
 
 let utilities script =
+  let abstract_args args =
+    args
+    |> List.map_filter
+      (fun (arg, _split) ->
+         match arg with
+         | Colis.Language.Syntax.SLiteral arg
+           when String.length arg > 0 && arg.[0] = '-' && String.index_opt arg ' ' = None ->
+           Some arg
+         | _ -> None)
+    |> List.sort String.compare
+  in
   let visitor = object
     inherit [_] Colis.Language.SyntaxHelpers.reduce
 
     method zero = []
     method plus = (@)
 
-    method! visit_ICallUtility () name _args = [name]
+    method! visit_ICallUtility () name args =
+      [name, abstract_args args]
   end in
   visitor#visit_program () (colis script)
-  |> List.sort_uniq String.compare
+  |> List.group String.compare (* group by first argument *)
+(* FIXME: group second argument and give list of positions *)
 
 let interp ~cmd_line_arguments ~states ~package_name m =
   let colis = colis ~cmd_line_arguments m in

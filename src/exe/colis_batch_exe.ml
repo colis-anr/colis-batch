@@ -62,5 +62,6 @@ let () =
       reports
       |> List.map summarize_package_report
       |> make_batch_report ~meta ~config
+      |> enrich_batch_report
     in
     generate_html_batch_report ~prefix:config.report report
