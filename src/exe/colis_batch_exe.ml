@@ -3,6 +3,9 @@ open Colis_batch open Colis_batch_ext
 let config = !Config.config
 
 let () =
+  Filesystem.mkdir config.report
+
+let () =
   Colis.Internals.Options.cpu_time_limit := config.cpu_timeout;
   Colis.Internals.Options.set_memory_limit config.memory_limit;
   Colis.Internals.Options.external_sources := config.external_sources;
