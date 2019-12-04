@@ -3,9 +3,6 @@ open Colis_batch open Colis_batch_ext
 let config = !Config.config
 
 let () =
-  Filesystem.mkdir config.report
-
-let () =
   Colis.Internals.Options.cpu_time_limit := config.cpu_timeout;
   Colis.Internals.Options.set_memory_limit config.memory_limit;
   Colis.Internals.Options.external_sources := config.external_sources;
@@ -34,8 +31,7 @@ let () =
   if config.cache <> "" then
     (
       Format.eprintf "Checking cache... @?";
-      if not Sys.(file_exists config.cache && is_directory config.cache) then
-        Filesystem.mkdir config.cache;
+      Filesystem.(try mkdir config.cache with FileExists _ -> ()); (* More atomic than if *)
       let files = Sys.readdir config.cache in
       Format.eprintf "done. Found %d files.@\nLoading cache...@." (Array.length files);
       files

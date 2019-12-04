@@ -11,11 +11,15 @@ let mkdir_one mode path =
 let rec mkdir_parents mode = function
   | "." | "/" -> ()
   | path ->
-    if not (Sys.file_exists path && Sys.is_directory path) then
-      (
-        mkdir_parents mode (Filename.dirname path);
-        mkdir_one mode path
-      )
+    mkdir_parents mode (Filename.dirname path);
+    try
+      mkdir_one mode path
+    with
+      FileExists path -> (* weirder than if, but atomic *)
+      if not (Sys.is_directory path) then
+        raise (FileExists path)
+      else
+        ()
 
 let mkdir ?(mode=0o777) ?(parents=false) path =
   (if parents then mkdir_parents else mkdir_one) mode path
