@@ -134,16 +134,24 @@ let with_formatter_to_html_report ?datatables ?highlight ?viz ~prefix (tap : tap
   pp_footer fmt ();
   y
 
-let pp_datatable fmt id =
+type order = Asc | Desc
+
+let pp_datatable ?(order=[]) fmt id =
   fpf fmt {|
       <script>
         $(document).ready( function () {
           $('#%s').DataTable( {
-            paging: false
+            "order": [%a],
+            "paging": false
           } );
         } );
       </script>
-    |} id
+    |}
+    id
+    (Format.pp_print_list
+       ~pp_sep:(fun fmt () -> fpf fmt ", ")
+       (fun fmt (col, ord) -> fpf fmt "[%d, \"%s\"]" col (match ord with Asc -> "asc" | Desc -> "desc")))
+    order
 
 let pp_viz fmt file =
   let id = string_of_int (Random.int (1 lsl 29)) in

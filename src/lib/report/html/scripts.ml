@@ -29,6 +29,7 @@ let pp_utilities fmt utilities =
     utilities;
   fpf fmt "</tbody></table>";
   Common.pp_datatable fmt "utilities"
+    ~order:[2, Common.Desc]
 
 let generate_utilities ~prefix utilities =
   let tap = ["Utilities", ["utilities"; "index.html"]] in
