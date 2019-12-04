@@ -8,12 +8,22 @@ let () =
   Colis.Internals.Options.external_sources := config.external_sources;
   Colis.Internals.Options.fail_on_unknown_utilities := true
 
+let pad_int_left_to y x =
+  let len x = iof (ceil (log10 (foi x +. 1.))) in
+  spf "%s%d" (String.make (max 0 (len y - len x)) ' ') x
+
+let pad_string_right_to y x =
+  spf "%s%s" x (String.make (max 0 (String.length y - String.length x)) ' ')
+
+let previous = ref ""
+
 (* =============================== [ Cache ] ================================ *)
 
-let save_to_cache (report : Report.Package.t) =
-  save_package_report_as_bin ~cache:config.cache report
+let () = previous := ""
 
-let load_from_cache key : Report.Package.t =
+let load_from_cache total i key : Report.Package.t =
+  Format.eprintf "\r  [%s/%d; %3d%%] %s@?" (pad_int_left_to total i) total (100 * i / total) (pad_string_right_to !previous key);
+  previous := key;
   load_package_report_as_bin ~cache:config.cache key
 
 let cache = Hashtbl.create 8
@@ -24,13 +34,13 @@ let () =
       if not Sys.(file_exists config.cache && is_directory config.cache) then
         Filesystem.mkdir config.cache;
       let files = Sys.readdir config.cache in
-      Format.eprintf "done. Found %d files.@\nLoading cache... @?" (Array.length files);
+      Format.eprintf "done. Found %d files.@\nLoading cache...@." (Array.length files);
       files
       |> Array.to_list
-      |> List.map load_from_cache
+      |> List.mapi (load_from_cache (Array.length files))
       |> List.iter (fun (report : Report.Package.t) ->
           Hashtbl.replace cache (Model.Package.path report.Report.Package.package) report);
-      Format.eprintf "done. Loaded %d packages.@." (Hashtbl.length cache)
+      Format.eprintf "@\ndone. Loaded %d packages.@." (Hashtbl.length cache)
     )
 
 (* ============================== [ Packages ] ============================== *)
@@ -76,14 +86,10 @@ let () =
 
 (* ============================== [ Process ] =============================== *)
 
-let pad_int_left_to y x =
-  let len x = iof (ceil (log10 (foi x +. 1.))) in
-  spf "%s%d" (String.make (max 0 (len y - len x)) ' ') x
+let save_to_cache (report : Report.Package.t) =
+  save_package_report_as_bin ~cache:config.cache report
 
-let pad_string_right_to y x =
-  spf "%s%s" x (String.make (max 0 (String.length y - String.length x)) ' ')
-
-let previous = ref ""
+let () = previous := ""
 
 let process_package i package_path =
   let () =
