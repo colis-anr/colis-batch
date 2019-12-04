@@ -136,13 +136,15 @@ let generate_one_html_package_report i (report : Report.Package.t) =
   in
   generate_html_package_report ~standalone:false ~prefix:config.report report
 
-let () = Format.eprintf "Generating report...@."
 let () =
   match reports with
   | [] -> failwith "no input"
   | [report] ->
-    generate_html_package_report ~standalone:true ~prefix:config.report report
+    Format.eprintf "Generating package report... @?";
+    generate_html_package_report ~standalone:true ~prefix:config.report report;
+    Format.eprintf "done.@."
   | reports ->
+    Format.eprintf "Generating packages reports...@.";
     MultiProcess.iteri_p ~workers:config.workers generate_one_html_package_report reports
     |> Lwt_main.run;
     let report =
@@ -151,5 +153,7 @@ let () =
       |> make_batch_report ~meta ~config
       |> enrich_batch_report
     in
-    generate_html_batch_report ~prefix:config.report report
-let () = Format.eprintf "@\ndone.@."
+    Format.eprintf "done.@.";
+    Format.eprintf "Generating batch report... @?";
+    generate_html_batch_report ~prefix:config.report report;
+    Format.eprintf "done.@."
