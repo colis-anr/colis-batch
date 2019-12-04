@@ -6,11 +6,10 @@ let pp_utility fmt utility =
     utility.name utility.occurrences utility.score;
   fpf fmt "<table><tr><th>Options</th><th>Occurrences</th></tr>";
   List.iter
-    (fun (options, nb) ->
+    (fun ((opts, others), nb) ->
        fpf fmt "<tr><td>";
-       (match options with
-        | [] -> fpf fmt "<i>(no options)</i>"
-        | _ -> Format.pp_print_list Format.pp_print_string fmt options);
+       Format.pp_print_list ~pp_sep:(fun fmt () -> fpf fmt " ") Format.pp_print_string fmt opts;
+       fpf fmt " <i>(+%d)</i>" others;
        fpf fmt "</td><td>%d</td></tr>" nb;
     )
     utility.options;

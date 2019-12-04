@@ -87,15 +87,25 @@ let colis ?(cmd_line_arguments=["DUM"; "MY"]) m =
 
 let utilities script =
   let abstract_args args =
-    args
-    |> List.map_filter
-      (fun (arg, _split) ->
-         match arg with
-         | Colis.Language.Syntax.SLiteral arg
-           when String.length arg > 0 && arg.[0] = '-' && String.index_opt arg ' ' = None ->
-           Some arg
-         | _ -> None)
-    |> List.sort String.compare
+    let (opts, args) =
+      args
+      |> List.map fst
+      |> List.partition
+        (function
+          | Colis.Language.Syntax.SLiteral arg
+            when String.length arg > 0 && arg.[0] = '-' && String.index_opt arg ' ' = None ->
+            true
+          | _ -> false)
+    in
+    let opts =
+      opts
+      |> List.map
+        (function
+          | Colis.Language.Syntax.SLiteral arg -> arg
+          | _ -> assert false)
+      |> List.sort String.compare
+    in
+    (opts, List.length args)
   in
   let visitor = object
     inherit [_] Colis.Language.SyntaxHelpers.reduce

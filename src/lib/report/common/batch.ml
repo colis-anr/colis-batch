@@ -51,7 +51,7 @@ and numbers_scripts =
 
 type utility =
   { name : string ;
-    options : (string list * int) list ;
+    options : ((string list * int) * int) list ;
     occurrences : int ;
     score : float }
 (* FIXME: instead of int, list of package + script + position *)
@@ -203,8 +203,7 @@ let enrich_scripts (report : t) : scripts =
                          utility.score +. 1. /. nb_unsupported
                      in
                      Hashtbl.replace utilities_table name
-                       { name ; options ; occurrences ; score }
-                  )
+                       { name ; options ; occurrences ; score })
                   utilities
               )
          )

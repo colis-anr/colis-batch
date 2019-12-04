@@ -41,7 +41,7 @@ val colis : ?cmd_line_arguments:string list -> t -> Colis.colis
    arguments, or dummy ones if not provided. Raises [Failure
    "Maintscript.colis"] if the script cannot be translated. *)
 
-val utilities : t -> (string * string list list) list
+val utilities : t -> (string * (string list * int) list) list
 (** List of utilities called by the script. Raises [Failure
    "Maintscript.colis"] if the script cannot be translated. *)
 
