@@ -51,7 +51,7 @@ let html_title_from_tap tap =
   |> List.rev
   |> String.concat title_sep
 
-let pp_header ?(highlight=false) ?(viz=false) tap fmt () =
+let pp_header ?(datatables=false) ?(highlight=false) ?(viz=false) tap fmt () =
   let root_path = root_path_from_tap tap |> Filename.concat_l in
   fpf fmt {|
         <!DOCTYPE html>
@@ -64,6 +64,20 @@ let pp_header ?(highlight=false) ?(viz=false) tap fmt () =
             <link rel="stylesheet" type="text/css" href="%s/static/style.css">
         |}
     (raw_title_from_tap tap) root_path root_path;
+
+  let jquery = datatables in
+
+  if jquery then
+    fpf fmt {|
+      <script type="text/javascript" src="%s/static/jQuery/3.4.1/jquery-3.4.1.min.js"></script>
+    |} root_path;
+
+  if datatables then
+    fpf fmt {|
+        <link rel="stylesheet" type="text/css" href="%s/static/DataTables/1.10.20/datatables.min.css"/>
+        <script type="text/javascript" src="%s/static/DataTables/1.10.20/datatables.min.js"></script>
+      |} root_path root_path;
+
   if highlight then
     fpf fmt {|
             <link rel="stylesheet" href="%s/static/highlight.js/9.14.2/styles/github.min.css">
@@ -75,12 +89,14 @@ let pp_header ?(highlight=false) ?(viz=false) tap fmt () =
             </script>
           |}
       root_path root_path root_path;
+
   if viz then
     fpf fmt {|
             <script src="%s/static/viz.js/v2.1.2/viz.js"></script>
             <script src="%s/static/viz.js/v2.1.2/full.render.js"></script>
           |}
       root_path root_path;
+
   fpf fmt {|
           </head>
           <body>
@@ -110,13 +126,24 @@ let pp_footer fmt () =
         </html>
       |}
 
-let with_formatter_to_html_report ?highlight ?viz ~prefix (tap : tap) f =
+let with_formatter_to_html_report ?datatables ?highlight ?viz ~prefix (tap : tap) f =
   let path = path_from_tap tap in
   Colis_batch_report_common.with_formatter_to_file ~prefix path @@ fun fmt ->
-  pp_header ?highlight ?viz tap fmt ();
+  pp_header ?datatables ?highlight ?viz tap fmt ();
   let y = f fmt in
   pp_footer fmt ();
   y
+
+let pp_datatable fmt id =
+  fpf fmt {|
+      <script>
+        $(document).ready( function () {
+          $('#%s').DataTable( {
+            paging: false
+          } );
+        } );
+      </script>
+    |} id
 
 let pp_viz fmt file =
   let id = string_of_int (Random.int (1 lsl 29)) in
@@ -146,9 +173,12 @@ let pp_viz fmt file =
 
 let extract_static ~prefix =
   [
+    "DataTables/1.10.20/datatables.min.css", [%blob "static/DataTables/1.10.20/datatables.min.css"];
+    "DataTables/1.10.20/datatables.min.js", [%blob "static/DataTables/1.10.20/datatables.min.js"];
     "highlight.js/9.14.2/styles/github.min.css", [%blob "static/highlight.js/9.14.2/styles/github.min.css"];
     "highlight.js/9.14.2/highlight.min.js", [%blob "static/highlight.js/9.14.2/highlight.min.js"];
     "highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js", [%blob "static/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"];
+    "jQuery/3.4.1/jquery-3.4.1.min.js", [%blob "static/jQuery/3.4.1/jquery-3.4.1.min.js"];
     "viz.js/v2.1.2/full.render.js", [%blob "static/viz.js/v2.1.2/full.render.js"];
     "viz.js/v2.1.2/viz.js", [%blob "static/viz.js/v2.1.2/viz.js"];
     "reset.css", [%blob "static/reset.css"];
@@ -185,3 +215,14 @@ let pp_details_list fmt ~text_after ~total cases =
       (List.rev cases);
     fpf fmt "<li>and <strong>%d</strong> (%g%%) %s.</li></ul>"
       nb (percentage nb total) text
+
+let slug str =
+  let out = Bytes.create (String.length str) in
+  for i = 0 to String.length str - 1 do
+    let c = Char.code str.[i] in
+    if (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) then
+      Bytes.set out i str.[i]
+    else
+      Bytes.set out i '-'
+  done;
+  Bytes.unsafe_to_string out ^ "-" ^ (soi (Hashtbl.hash str))

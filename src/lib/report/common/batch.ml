@@ -163,47 +163,51 @@ let enrich_scripts (report : t) : scripts =
     (fun package ->
        Model.Package.iter_maintscripts
          (fun script ->
-            let utilities = Model.Maintscript.utilities script in
-            let nb_unsupported =
-              utilities
-              |> List.map fst
-              |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
-              |> List.length
-              |> foi
-            in
-            List.iter
-              (fun (name, args) ->
-                 let utility =
-                   match Hashtbl.find_opt utilities_table name with
-                   | None -> { name ; options = [] ; occurrences = 0 ; score = 0. }
-                   | Some utility -> utility
-                 in
-                 let options =
-                   List.fold_left
-                     (fun options args ->
-                        List.update_assoc
-                          args
-                          (function
-                            | None -> Some 1
-                            | Some nb -> Some (nb + 1))
-                          options)
-                     utility.options
-                     args
-                 in
-                 let occurrences =
-                   utility.occurrences
-                   + List.length args
-                 in
-                 let score =
-                   if Colis.Symbolic.Utility.is_registered name then
-                     0.
-                   else
-                     utility.score +. 1. /. nb_unsupported
-                 in
-                 Hashtbl.replace utilities_table name
-                   { name ; options ; occurrences ; score }
+            if not (Model.Maintscript.has_error script) then
+              (
+                let utilities = Model.Maintscript.utilities script in
+                let nb_unsupported =
+                  utilities
+                  |> List.map fst
+                  |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
+                  |> List.length
+                  |> foi
+                in
+                List.iter
+                  (fun (name, args) ->
+                     let utility =
+                       match Hashtbl.find_opt utilities_table name with
+                       | None -> { name ; options = [] ; occurrences = 0 ; score = 0. }
+                       | Some utility -> utility
+                     in
+                     let options =
+                       List.fold_left
+                         (fun options args ->
+                            List.update_assoc
+                              args
+                              (function
+                                | None -> Some 1
+                                | Some nb -> Some (nb + 1))
+                              options)
+                         utility.options
+                         args
+                     in
+                     let occurrences =
+                       utility.occurrences
+                       + List.length args
+                     in
+                     let score =
+                       if Colis.Symbolic.Utility.is_registered name then
+                         0.
+                       else
+                         utility.score +. 1. /. nb_unsupported
+                     in
+                     Hashtbl.replace utilities_table name
+                       { name ; options ; occurrences ; score }
+                  )
+                  utilities
               )
-              utilities)
+         )
          package.Package.package)
     report.packages;
   let utilities =
