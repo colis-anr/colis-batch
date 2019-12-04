@@ -183,6 +183,13 @@ let extract_static ~prefix =
   [
     "DataTables/1.10.20/datatables.min.css", [%blob "static/DataTables/1.10.20/datatables.min.css"];
     "DataTables/1.10.20/datatables.min.js", [%blob "static/DataTables/1.10.20/datatables.min.js"];
+
+    "DataTables/1.10.20/DataTables-1.10.20/images/sort_asc.png", [%blob "static/DataTables/1.10.20/DataTables-1.10.20/images/sort_asc.png"];
+    "DataTables/1.10.20/DataTables-1.10.20/images/sort_asc_disabled.png", [%blob "static/DataTables/1.10.20/DataTables-1.10.20/images/sort_asc_disabled.png"];
+    "DataTables/1.10.20/DataTables-1.10.20/images/sort_both.png", [%blob "static/DataTables/1.10.20/DataTables-1.10.20/images/sort_both.png"];
+    "DataTables/1.10.20/DataTables-1.10.20/images/sort_desc.png", [%blob "static/DataTables/1.10.20/DataTables-1.10.20/images/sort_desc.png"];
+    "DataTables/1.10.20/DataTables-1.10.20/images/sort_desc_disabled.png", [%blob "static/DataTables/1.10.20/DataTables-1.10.20/images/sort_desc_disabled.png"];
+
     "highlight.js/9.14.2/styles/github.min.css", [%blob "static/highlight.js/9.14.2/styles/github.min.css"];
     "highlight.js/9.14.2/highlight.min.js", [%blob "static/highlight.js/9.14.2/highlight.min.js"];
     "highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js", [%blob "static/highlightjs-line-numbers.js/2.6.0/highlightjs-line-numbers.min.js"];
