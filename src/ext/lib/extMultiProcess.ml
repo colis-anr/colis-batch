@@ -30,24 +30,42 @@ let forkee inputs_ichan outputs_ochan f =
   );
   exit 0
 
-let forker inputs_ochan outputs_ichan q a =
-  try%lwt
-    while%lwt true do
-      let (index, input) = Queue.take q in
-      let%lwt () = Lwt_io.write_value inputs_ochan (index, input) in
-      let%lwt () = Lwt_io.flush inputs_ochan in
-      let%lwt output = Lwt_io.read_value outputs_ichan in
-      if a.(index) <> None then
-        raise Error;
-      match output with
-      | Ok output ->
-        a.(index) <- Some output;
-        Lwt.return ()
-      | Error exn ->
-        Lwt.fail exn
-    done
-  with
-  | Queue.Empty -> Lwt.return ()
+let forker pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) q a =
+  Lwt.finalize
+
+    (fun () ->
+       try%lwt
+         while%lwt true do
+           let (index, input) = Queue.take q in
+           let%lwt () = Lwt_io.write_value inputs_ochan (index, input) in
+           let%lwt () = Lwt_io.flush inputs_ochan in
+           let%lwt output = Lwt_io.read_value outputs_ichan in
+           if a.(index) <> None then
+             raise Error;
+           match output with
+           | Ok output ->
+             a.(index) <- Some output;
+             Lwt.return ()
+           | Error exn ->
+             Lwt.fail exn
+         done
+       with
+         Queue.Empty -> Lwt.return ())
+
+    (fun () ->
+       Unix.kill pid Sys.sigkill;
+       try%lwt
+         let%lwt () = Lwt_io.abort inputs_ochan in
+         close_in inputs_ichan;
+         close_out outputs_ochan;
+         let%lwt () = Lwt_io.abort outputs_ichan in
+         Lwt.return ()
+       with
+         exn ->
+         Format.eprintf "Unexpected exception in forker's finaliser:@\n%s@\n%s@."
+           (Printexc.to_string exn)
+           (Printexc.get_backtrace ());
+         Lwt.return ())
 
 let mapi_p ~workers f l =
   let rec create_workers q a acc wid =
@@ -69,24 +87,7 @@ let mapi_p ~workers f l =
         | 0 ->
           [forkee inputs_ichan outputs_ochan f] (* Not acc! *)
         | pid ->
-          let worker =
-            Lwt.finalize
-              (fun () -> forker inputs_ochan outputs_ichan q a)
-              (fun () ->
-                 Unix.kill pid Sys.sigkill;
-                 try%lwt
-                   let%lwt () = Lwt_io.abort inputs_ochan in
-                   close_in inputs_ichan;
-                   close_out outputs_ochan;
-                   let%lwt () = Lwt_io.abort outputs_ichan in
-                   Lwt.return ()
-                 with
-                   exn ->
-                   Format.eprintf "Unexpected exception in forker's wrapper:@\n%s@\n%s"
-                     (Printexc.to_string exn)
-                     (Printexc.get_backtrace ());
-                   Lwt.return ())
-          in
+          let worker = forker pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) q a in
           create_workers q a (worker :: acc) (wid + 1)
       )
   in
