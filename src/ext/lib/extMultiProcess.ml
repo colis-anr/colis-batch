@@ -81,13 +81,17 @@ let mapi_p ~workers f l =
                    let%lwt () = Lwt_io.abort outputs_ichan in
                    Lwt.return ()
                  with
-                   _exn ->
+                   exn ->
+                   Format.eprintf "Unexpected exception in forker's wrapper:@\n%s@\n%s"
+                     (Printexc.to_string exn)
+                     (Printexc.get_backtrace ());
                    Lwt.return ())
           in
           create_workers q a (worker :: acc) (wid + 1)
       )
   in
-  let (_ichan, _ochan) = Lwt_io.pipe () in
+
+  let (_ichan, _ochan) = Lwt_io.pipe () in (* Probably here to find errors earlier? *)
   let q = Queue.create () in
   let a = Array.make (List.length l) None in
   List.iteri (fun i x -> Queue.add (i, x) q) l;
