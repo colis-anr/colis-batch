@@ -61,6 +61,7 @@ let finaliser pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) =
     close_in inputs_ichan;
     close_out outputs_ochan;
     let%lwt () = Lwt_io.abort outputs_ichan in
+    let%lwt _ = Lwt_unix.waitpid [WUNTRACED] pid in
     Lwt.return ()
   with
     exn ->
