@@ -31,6 +31,8 @@ let forkee inputs_ichan outputs_ochan f =
   exit 0
 
 let forker inputs_ochan outputs_ichan q a =
+  let%lwt q = q in
+  let%lwt a = a in
   try%lwt
     while%lwt true do
       let (index, input) = Queue.take q in
@@ -70,7 +72,7 @@ let finaliser pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) =
       (Printexc.get_backtrace ());
     Lwt.fail exn
 
-let mapi_p ~workers f l =
+let mapi_dp ~workers f l =
   let rec create_workers q a acc wid =
     if wid >= workers then
       acc
@@ -98,12 +100,23 @@ let mapi_p ~workers f l =
           create_workers q a (worker :: acc) (wid + 1)
       )
   in
-
+  (* Create workers and give them a promise to a queue and an
+     array. This triggers the forks. *)
   let (_ichan, _ochan) = Lwt_io.pipe () in (* Probably here to find errors earlier? *)
+  let (q, uq) = Lwt.wait () in
+  let (a, ua) = Lwt.wait () in
+  let workers = create_workers q a [] 0 |> List.rev in
+  (* Wait for the delayed list, create the queue and the array and
+     resolve the promises given to the workers. *)
+  let%lwt l = l in
   let q = Queue.create () in
   let a = Array.make (List.length l) None in
   List.iteri (fun i x -> Queue.add (i, x) q) l;
-  let%lwt () = create_workers q a [] 0 |> List.rev |> lwt_join_or_first_error in
+  Lwt.wakeup uq q;
+  Lwt.wakeup ua a;
+  (* Join on the workers (or fail asap). Put the result under the form
+     of a list, check it and return it. *)
+  let%lwt () = lwt_join_or_first_error workers in
   Array.fold_right
     (fun b l ->
        match b with
@@ -113,12 +126,11 @@ let mapi_p ~workers f l =
     []
   |> Lwt.return
 
-let iteri_p ~workers f l =
-  let%lwt _ = mapi_p ~workers f l in
-  Lwt.return_unit
+let iteri_dp ~workers f l = let%lwt _ = mapi_dp ~workers f l in Lwt.return_unit
+let map_dp ~workers f l = mapi_dp ~workers (fun _ -> f) l
+let iter_dp ~workers f l = iteri_dp ~workers (fun _ -> f) l
 
-let map_p ~workers f l =
-  mapi_p ~workers (fun _ -> f) l
-
-let iter_p ~workers f l =
-  iteri_p ~workers (fun _ -> f) l
+let mapi_p ~workers f l = mapi_dp ~workers f (Lwt.return l)
+let map_p ~workers f l = map_dp ~workers f (Lwt.return l)
+let iteri_p ~workers f l = iteri_dp ~workers f (Lwt.return l)
+let iter_p ~workers f l = iter_dp ~workers f (Lwt.return l)
