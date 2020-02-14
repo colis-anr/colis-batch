@@ -11,8 +11,8 @@ type t =
 let make ~meta ~config package scenarii =
   { meta ; config ; package ; scenarii }
 
-let save_as_bin ~cache (report : t) =
-  let path = Filename.concat cache (spf "%x.bin" (Hashtbl.hash report)) in
+let save_as_bin ~cache file (report : t) =
+  let path = Filename.concat cache file in
   Path.with_lock_on path @@ fun () ->
   let oc = open_out path in
   Marshal.to_channel oc report [];

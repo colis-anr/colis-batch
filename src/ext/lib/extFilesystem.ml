@@ -28,3 +28,15 @@ let write_to_file ~content path =
   let oc = open_out path in
   output_string oc content;
   close_out oc
+
+let read_lines_from_file path =
+  let ic = open_in path in
+  let rec read_lines_from_file lines =
+    try
+      read_lines_from_file (input_line ic :: lines)
+    with
+      End_of_file -> List.rev lines
+  in
+  let lines = read_from_file () in
+  close_in ic;
+  lines

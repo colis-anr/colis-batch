@@ -1,4 +1,16 @@
+(install
+ (section bin)
+ (files
+  (colis_batch.sh as colis-batch)))
+
 (executable
- (name colis_batch_exe)
- (public_name colis-batch)
+ (name colis_batch_analyse)
+ (public_name colis-batch-analyse)
+ (modules colis_batch_analyse)
+ (libraries colis-batch))
+
+(executable
+ (name colis_batch_report)
+ (public_name colis-batch-report)
+ (modules colis_batch_report)
  (libraries colis-batch))

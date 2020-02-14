@@ -21,9 +21,12 @@ let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let maintscript pkg key = List.find_opt (Maintscript.has_key key) pkg.maintscripts
 
-let parse ~content path =
+let parse path =
   if not (Sys.file_exists path && Sys.is_directory path) then
-    failwith "Package.parse: no such directory";
+    failwith "Package.parse_from_dir: no such directory";
+  if not (Sys.file_exists (Filename.concat path "content")) then
+    failwith "Package.parse_from_dir: no content file";
+
   let (name, version) = String.split_2_on_char '_' (Filename.basename path) in
   let maintscripts =
     Maintscript.Key.all
@@ -34,6 +37,11 @@ let parse ~content path =
            Some (Maintscript.parse maintscript_path)
          else
            None)
+  in
+  let content =
+    Filename.concat path "content"
+    |> Filesystem.read_lines_from_file
+    |> List.map (fun s -> "/" ^ s)
   in
   { path; name; version; content ; maintscripts }
 
