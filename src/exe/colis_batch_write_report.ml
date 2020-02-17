@@ -1,10 +1,15 @@
 open Colis_batch open Colis_batch_ext
 
+let config = !Config.config
+
+let () =
+  (* This happens to be necessary because of how conversion in CoLiS works. *)
+  (* FIXME: get rid of this? *)
+  Colis.Internals.Options.external_sources := config.external_sources
+
 let pad_int_left_to y x = (*FIXME: move to ext?*)
   let len x = iof (ceil (log10 (foi x +. 1.))) in
   spf "%s%d" (String.make (max 0 (len y - len x)) ' ') x
-
-let config = !Config.config
 
 let (keys, nb_keys) =
   epf "Reading cache content... @?";
