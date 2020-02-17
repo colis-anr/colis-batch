@@ -21,7 +21,7 @@ let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let maintscript pkg key = List.find_opt (Maintscript.has_key key) pkg.maintscripts
 
-let parse path =
+let parse_from_dir path =
   if not (Sys.file_exists path && Sys.is_directory path) then
     failwith "Package.parse_from_dir: no such directory";
   if not (Sys.file_exists (Filename.concat path "content")) then

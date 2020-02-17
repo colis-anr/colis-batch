@@ -9,7 +9,7 @@ let config = !Config.config
 let (keys, nb_keys) =
   epf "Reading cache content... @?";
   let keys = Sys.readdir config.cache in
-  let nb_keys = Array.length files in
+  let nb_keys = Array.length keys in
   epf "done. Found %d files.@." nb_keys;
   (keys, nb_keys)
 
@@ -21,12 +21,19 @@ let summaries =
     |> MultiProcess.mapi_p ~workers:config.workers (fun i key ->
         let i = i + 1 in
         epf "\r  [%s/%d; %3d%%] %s   @?" (pad_int_left_to nb_keys i) nb_keys (100 * i / nb_keys) key;
-        key
-        |> load_package_report_as_bin ~cache:config.cache
-        |> generate_html_package_report ~standalone:false ~prefix:config.report)
+        let report = load_package_report_as_bin ~cache:config.cache key in
+        generate_html_package_report ~standalone:false ~prefix:config.report report;
+        summarize_package_report report)
+    |> Lwt_main.run
   in
   epf "done.@.";
   summaries
+
+let meta =
+  epf "Reading meta... @.";
+  let meta = Filesystem.read_value_from_file (Filename.concat config.cache "meta.bin") in
+  epf "done.@.";
+  meta
 
 let batch =
   epf "Combining package reports into a batch report... @?";
@@ -40,5 +47,5 @@ let batch =
 
 let () =
   epf "Generating batch report... @?";
-  generate_html_batch_report ~prefix:config.report report;
+  generate_html_batch_report ~prefix:config.report batch;
   epf "done.@."

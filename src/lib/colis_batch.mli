@@ -23,12 +23,12 @@ module Engine = Colis_batch_engine
 
 (** {2 One Package} *)
 
-val parse_package_from_dir : content:string list -> string -> Model.Package.t
+val parse_package_from_dir : string -> Model.Package.t
 
 val analyse_package : config:Config.t -> Model.Package.t -> Report.Package.t
 
-val save_package_report_as_bin : cache:string -> Report.Package.t -> unit
 val load_package_report_as_bin : cache:string -> string -> Report.Package.t
+val save_package_report_as_bin : cache:string -> string -> Report.Package.t -> unit
 
 val generate_html_package_report : standalone:bool -> prefix:string -> Report.Package.t -> unit
 

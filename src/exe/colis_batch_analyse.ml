@@ -33,13 +33,13 @@ let (package_pathes, nb_packages) =
       )
   in
   let nb_packages = List.length package_pathes in
-  epf "done. Found %d packages.@." nb_packages
-    (package_pathes, nb_packages)
+  epf "done. Found %d packages.@." nb_packages;
+  (package_pathes, nb_packages)
 
 let () =
   if nb_packages = 0 then
     (
-      printf "No package to handle. Exiting.@.";
+      epf "No package to handle. Exiting.@.";
       exit 0
     )
 
@@ -48,8 +48,7 @@ let process_package i package_path =
   let () =
     let i = i + 1 in
     let str = Filename.basename package_path in
-    Format.eprintf "\r  [%s/%d; %3d%%] .../%s@?" (pad_int_left_to nb_packages i) nb_packages (100 * i / nb_packages) (pad_string_right_to !previous str);
-    previous := str
+    Format.eprintf "\r  [%s/%d; %3d%%] .../%s@?" (pad_int_left_to nb_packages i) nb_packages (100 * i / nb_packages) str;
   in
 
   let package = parse_package_from_dir package_path in
@@ -63,4 +62,9 @@ let (meta, reports) =
     MultiProcess.iteri_p ~workers:config.workers process_package package_pathes
     |> Lwt_main.run
   in
-  epf "@\ndone.@.";
+  epf "@\ndone.@."
+
+let () =
+  epf "Writing meta to cache... @?";
+  Filesystem.write_value_to_file meta (Filename.concat config.cache "meta.bin");
+  epf "done.@."

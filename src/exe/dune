@@ -10,7 +10,7 @@
  (libraries colis-batch))
 
 (executable
- (name colis_batch_report)
- (public_name colis-batch-report)
- (modules colis_batch_report)
+ (name colis_batch_write_report)
+ (public_name colis-batch-write-report)
+ (modules colis_batch_write_report)
  (libraries colis-batch))

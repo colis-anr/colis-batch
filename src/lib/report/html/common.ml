@@ -204,7 +204,7 @@ let extract_static ~prefix =
        let path = Filename.concat_l [prefix; "static"; path] in
        let dir = Filename.dirname path in
        Filesystem.mkdir ~parents:true dir;
-       Filesystem.write_to_file ~content path)
+       Filesystem.write_string_to_file ~content path)
 
 let percentage a b =
   100. *. (significant ~precision:2 ((foi a) /. (foi b)))

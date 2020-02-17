@@ -24,19 +24,36 @@ let rec mkdir_parents mode = function
 let mkdir ?(mode=0o777) ?(parents=false) path =
   (if parents then mkdir_parents else mkdir_one) mode path
 
-let write_to_file ~content path =
+let with_output_channel_on_file path fun_ =
   let oc = open_out path in
-  output_string oc content;
-  close_out oc
+  let v = try Ok (fun_ oc) with exn -> Error exn in
+  close_out oc;
+  match v with Ok v -> v | Error exn -> raise exn
+
+let write_string_to_file ~content path =
+  with_output_channel_on_file path @@ fun oc ->
+  output_string oc content
+
+let write_value_to_file value path =
+  with_output_channel_on_file path @@ fun oc ->
+  output_value oc value
+
+let with_input_channel_on_file path fun_ =
+  let ic = open_in path in
+  let v = try Ok (fun_ ic) with exn -> Error exn in
+  close_in ic;
+  match v with Ok v -> v | Error exn -> raise exn
 
 let read_lines_from_file path =
-  let ic = open_in path in
+  with_input_channel_on_file path @@ fun ic ->
   let rec read_lines_from_file lines =
     try
       read_lines_from_file (input_line ic :: lines)
     with
       End_of_file -> List.rev lines
   in
-  let lines = read_from_file () in
-  close_in ic;
-  lines
+  read_lines_from_file []
+
+let read_value_from_file path =
+  with_input_channel_on_file path @@ fun ic ->
+  input_value ic
