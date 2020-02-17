@@ -23,7 +23,7 @@ let forkee inputs_ichan outputs_ochan f =
     with
       exn ->
       Format.eprintf
-        "Unexpected exception in forkee:@\n%s@\n%s@."
+        "Unexpected normal exception in forkee:@\n%s@\n%s@."
         (Printexc.to_string exn)
         (Printexc.get_backtrace ());
       raise exn
@@ -31,46 +31,61 @@ let forkee inputs_ichan outputs_ochan f =
   exit 0
 
 let forker inputs_ochan outputs_ichan q a =
-  let%lwt q = q in
-  let%lwt a = a in
-  try%lwt
-    while%lwt true do
-      let (index, input) = Queue.take q in
-      let%lwt () = Lwt_io.write_value inputs_ochan (index, input) in
-      let%lwt () = Lwt_io.flush inputs_ochan in
-      let%lwt output = Lwt_io.read_value outputs_ichan in
-      if a.(index) <> None then
-        raise Error;
-      match output with
-      | Ok output ->
-        a.(index) <- Some output;
-        Lwt.return ()
-      | Error exn ->
-        Lwt.fail exn
-    done
-  with
-  | Queue.Empty -> Lwt.return ()
-  | exn ->
-    Format.eprintf "Unexpected exception in forker:@\n%s@\n%s@."
-      (Printexc.to_string exn)
-      (Printexc.get_backtrace ());
-    Lwt.fail exn
-
-let finaliser pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) =
-  Unix.kill pid Sys.sigkill;
-  try%lwt
-    let%lwt () = Lwt_io.abort inputs_ochan in
-    close_in inputs_ichan;
-    close_out outputs_ochan;
-    let%lwt () = Lwt_io.abort outputs_ichan in
-    let%lwt _ = Lwt_unix.waitpid [WUNTRACED] pid in
-    Lwt.return ()
+  try
+    let%lwt q = q in
+    let%lwt a = a in
+    try%lwt
+      while%lwt true do
+        let (index, input) = Queue.take q in
+        let%lwt () = Lwt_io.write_value inputs_ochan (index, input) in
+        let%lwt () = Lwt_io.flush inputs_ochan in
+        let%lwt output = Lwt_io.read_value outputs_ichan in
+        if a.(index) <> None then
+          raise Error;
+        match output with
+        | Ok output ->
+          a.(index) <- Some output;
+          Lwt.return ()
+        | Error exn ->
+          Lwt.fail exn
+      done
+    with
+    | Queue.Empty ->
+      Lwt.return ()
+    | exn ->
+      Format.eprintf "Unexpected Lwt exception in forker:@\n%s@\n%s@."
+        (Printexc.to_string exn)
+        (Printexc.get_backtrace ());
+      Lwt.fail exn
   with
     exn ->
-    Format.eprintf "Unexpected exception in finaliser:@\n%s@\n%s@."
+    Format.eprintf "Unexpected normal exception in forker:@\n%s@\n%s@."
       (Printexc.to_string exn)
       (Printexc.get_backtrace ());
-    Lwt.fail exn
+    raise exn
+
+let finaliser pid (inputs_ichan, inputs_ochan) (outputs_ichan, outputs_ochan) =
+  try
+    Unix.kill pid Sys.sigkill;
+    try%lwt
+      let%lwt () = Lwt_io.abort inputs_ochan in
+      close_in inputs_ichan;
+      close_out outputs_ochan;
+      let%lwt () = Lwt_io.abort outputs_ichan in
+      let%lwt _ = Lwt_unix.waitpid [WUNTRACED] pid in
+      Lwt.return ()
+    with
+      exn ->
+      Format.eprintf "Unexpected Lwt exception in finaliser:@\n%s@\n%s@."
+        (Printexc.to_string exn)
+        (Printexc.get_backtrace ());
+      Lwt.fail exn
+  with
+    exn ->
+    Format.eprintf "Unexpected normal exception in finaliser:@\n%s@\n%s@."
+      (Printexc.to_string exn)
+      (Printexc.get_backtrace ());
+    raise exn
 
 let mapi_dp ~workers f l =
   let rec create_workers q a acc wid =
