@@ -13,16 +13,20 @@ let pad_int_left_to y x = (*FIXME: move to ext?*)
 
 let (keys, nb_keys) =
   epf "Reading cache content... @?";
-  let keys = Sys.readdir config.cache in
-  let nb_keys = Array.length keys in
+  let keys =
+    config.cache
+    |> Sys.readdir
+    |> Array.to_list
+    |> List.filter ((<>) "meta.bin") (* FIXME: a better way of doing that? *)
+  in
+  let nb_keys = List.length keys in
   epf "done. Found %d files.@." nb_keys;
   (keys, nb_keys)
 
 let summaries =
-  epf "Generating package reports... @.";
+  epf "Generating package reports and gathering summaries... @.";
   let summaries =
     keys
-    |> Array.to_list
     |> MultiProcess.mapi_p ~workers:config.workers (fun i key ->
         let i = i + 1 in
         epf "\r  [%s/%d; %3d%%] %s   @?" (pad_int_left_to nb_keys i) nb_keys (100 * i / nb_keys) key;
