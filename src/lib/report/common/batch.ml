@@ -51,10 +51,12 @@ and numbers_scripts =
 
 type utility =
   { name : string ;
-    options : ((string list * int) * int) list ;
-    occurrences : int ;
+    options : (
+      (string list * int) (* dashed + number of non-dashed options *)
+      * (Model.Package.t * Model.Maintscript.t) list (* FIXME: position *)
+    ) list ;
+    occurrences : (Model.Package.t * Model.Maintscript.t) list (* FIXME: position *) ;
     score : float }
-(* FIXME: instead of int, list of package + script + position *)
 [@@deriving yojson]
 
 type scripts =
@@ -159,56 +161,64 @@ let enrich_numbers (report : t) : numbers =
 
 let enrich_scripts (report : t) : scripts =
   let utilities_table = Hashtbl.create 8 in
-  List.iter
-    (fun package ->
-       Model.Package.iter_maintscripts
-         (fun script ->
-            if not (Model.Maintscript.has_error script) then
-              (
-                let utilities = Model.Maintscript.utilities script in
-                let nb_unsupported =
-                  utilities
-                  |> List.map fst
-                  |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
-                  |> List.length
-                  |> foi
-                in
-                List.iter
-                  (fun (name, args) ->
-                     let utility =
-                       match Hashtbl.find_opt utilities_table name with
-                       | None -> { name ; options = [] ; occurrences = 0 ; score = 0. }
-                       | Some utility -> utility
-                     in
-                     let options =
-                       List.fold_left
-                         (fun options args ->
-                            List.update_assoc
-                              args
-                              (function
-                                | None -> Some 1
-                                | Some nb -> Some (nb + 1))
-                              options)
-                         utility.options
-                         args
-                     in
-                     let occurrences =
-                       utility.occurrences
-                       + List.length args
-                     in
-                     let score =
-                       if Colis.Symbolic.Utility.is_registered name then
-                         0.
-                       else
-                         utility.score +. 1. /. nb_unsupported
-                     in
-                     Hashtbl.replace utilities_table name
-                       { name ; options ; occurrences ; score })
-                  utilities
-              )
-         )
-         package.Package.package)
-    report.packages;
+  (* For each package report summary *)
+  report.packages |> List.iter (fun package ->
+      (* For each maintscript in the package *)
+      package.Package.package |> Model.Package.iter_maintscripts (fun script ->
+          (* If it has been converted without error *)
+          if not (Model.Maintscript.has_error script) then
+            (
+              (* We gather its utilities. This is a list of utility
+                 names, with a list of abstractions of the ways they
+                 are called (with a list of dashed arguments and the
+                 number of non-dashed ones). *)
+              let utilities = Model.Maintscript.utilities script in
+              let nb_unsupported =
+                utilities
+                |> List.map fst
+                |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
+                |> List.length
+                |> foi
+              in
+              (* Iterate through all the utility calls in this
+                 script. *)
+              utilities |> List.iter (fun (name, args) ->
+                  (* Recover what we know on this utility on all
+                     scripts. If we have never seen the utility
+                     before, add it. *)
+                  let utility =
+                    match Hashtbl.find_opt utilities_table name with
+                    | None -> { name ; options = [] ; occurrences = [] ; score = 0. }
+                    | Some utility -> utility
+                  in
+                  (* Add to already existing options the ones coming
+                     from this script. *)
+                  let options =
+                    List.fold_left
+                      (fun options args ->
+                         List.update_assoc
+                           args
+                           (fun places ->
+                              let places = match places with None -> [] | Some places -> places in
+                              Some ((package.Package.package, script) :: places)) (* FIXME: position *)
+                           options)
+                      utility.options
+                      args
+                  in
+                  (* Add to already gathered occurrences the ones
+                     coming from this script. *)
+                  let occurrences =
+                    List.map (fun _ -> (package.Package.package, script)) args (* FIXME: position? *)
+                    @ utility.occurrences
+                  in
+                  let score =
+                    if Colis.Symbolic.Utility.is_registered name then
+                      0.
+                    else
+                      utility.score +. 1. /. nb_unsupported
+                  in
+                  Hashtbl.replace utilities_table name
+                    { name ; options ; occurrences ; score }))));
   let utilities =
     utilities_table
     |> Hashtbl.to_seq

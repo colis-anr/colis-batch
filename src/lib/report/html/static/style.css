@@ -83,19 +83,8 @@ pre { max-width: 100%%; overflow: auto; }
 
 table { width: 100%; }
 
-tr {
-  line-height: 2rem;
-  border-bottom: 1px solid #ced4da;
-}
-
 td, th {
   padding: .2rem;
-}
-
-thead, tbody {
-  border-width: 2px 0 2px 0;
-  border-style: solid;
-  border-color: #ced4da;
 }
 
 thead tr, tr th {

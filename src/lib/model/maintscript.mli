@@ -42,8 +42,11 @@ val colis : ?cmd_line_arguments:string list -> t -> Colis.colis
    "Maintscript.colis"] if the script cannot be translated. *)
 
 val utilities : t -> (string * (string list * int) list) list
-(** List of utilities called by the script. Raises [Failure
-   "Maintscript.colis"] if the script cannot be translated. *)
+(** List of utilities called by the script, with, for each one of
+   them, a list of abstractions of the ways they are called (with a
+   list of dashed arguments and the number of non-dashed ones).
+   Raises [Failure "Maintscript.colis"] if the script cannot be
+   translated. *)
 
 val interp :
   cmd_line_arguments:string list ->
