@@ -41,7 +41,6 @@ let parse_from_dir path =
   let content =
     Filename.concat path "content"
     |> Filesystem.read_lines_from_file
-    |> List.map (fun s -> "/" ^ s)
   in
   { path; name; version; content ; maintscripts }
 
