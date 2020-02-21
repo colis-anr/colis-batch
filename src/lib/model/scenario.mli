@@ -8,6 +8,7 @@ module Status : sig
     | Unpacked
     | OSEF
     | NonIdempotent
+  [@@deriving yojson]
 
   val to_string : t -> string
   val pp : Format.formatter -> t -> unit
@@ -28,7 +29,8 @@ val all_status : ('leaf, 'node) t -> Status.t list
 (** {2 Clean Scenario} *)
 
 type clean = (unit, unit) t
-
+[@@deriving yojson]
+    
 val status : Status.t -> clean
 
 val unpack : on_success:clean -> clean

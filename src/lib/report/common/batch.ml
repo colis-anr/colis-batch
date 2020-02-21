@@ -63,12 +63,18 @@ type scripts =
   { utilities : utility list } (* FIXME: move number here *)
 [@@deriving yojson]
 
+type scenario =
+  { scenario : Model.Scenario.clean ;
+    packages_by_status : (Model.Scenario.Status.t * Package.summary list) list }
+[@@deriving yojson]
+
 type rich =
   { meta : Meta.t ;
     config : Colis_batch_config.t ;
     numbers : numbers ;
     scripts : scripts ;
-    packages : Package.summary list }
+    packages : Package.summary list ;
+    scenarios : (Model.Scenarii.Name.t * scenario) list }
 [@@deriving yojson { exn = true }]
 
 let enrich_numbers (report : t) : numbers =
@@ -227,9 +233,44 @@ let enrich_scripts (report : t) : scripts =
   in
   { utilities }
 
+let enrich_scenario (report : t) name scenario =
+  let all_status = Model.Scenario.all_status scenario in
+  let packages_by_status =
+    let packages_by_status =
+      List.map (fun status -> (status, ref [])) all_status
+    in
+    report.packages |> List.iter (fun package ->
+        package.Package.scenarii |> List.iter (fun (name', scenario) ->
+            if name' = name then
+              (
+                scenario |> Model.Scenario.states_sum |> List.iter (fun (status, states) ->
+                    if states <> 0 then
+                      match List.assoc_opt status packages_by_status with
+                      | None -> ()
+                      | Some others -> others := package :: !others)
+              )
+          )
+      );
+    packages_by_status |> List.map (fun (status, packages) ->
+        (status,
+         List.sort_uniq
+           (fun p1 p2 ->
+              compare
+                (Model.Package.name p1.Package.package)
+                (Model.Package.name p2.Package.package))
+           !packages))
+  in
+  { scenario ; packages_by_status }
+
+let enrich_scenarios (report : t) =
+  Model.Scenarii.all |> List.map (fun (name, sc) ->
+      (name, enrich_scenario report name sc)
+    )
+
 let enrich (report : t) : rich =
   { meta = report.meta ;
     config = report.config ;
     numbers = enrich_numbers report ;
     scripts = enrich_scripts report ;
-    packages = report.packages }
+    packages = report.packages ;
+    scenarios = enrich_scenarios report }

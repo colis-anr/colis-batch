@@ -45,67 +45,35 @@ let pp_index fmt report =
    (parsing error, conversion, rejection, etc.). This page should also list the
    unsupported utilities in scripts. *)
 
-let pp_scenario fmt report name scenario =
+let pp_scenario fmt scenario =
   fpf fmt "<div style=\"margin: auto;\">%a</div>"
     Common.pp_viz "flowchart.dot";
-  let all_status = Model.Scenario.all_status scenario in
-  let package_by_status =
-    let package_by_status =
-      List.map (fun status -> (status, ref [])) all_status
-    in
-    report.packages |> List.iter (fun package ->
-        package.Colis_batch_report_common.Package.scenarii |> List.iter (fun (name', scenario) ->
-            if name' = name then
-              (
-                scenario |> Model.Scenario.states_sum |> List.iter (fun (status, states) ->
-                    if states <> 0 then
-                      match List.assoc_opt status package_by_status with
-                      | None -> ()
-                      | Some others -> others := package :: !others)
-              )
-          )
-      );
-    List.map
-      (fun (status, packages) ->
-         (status,
-          List.sort_uniq
-            (fun p1 p2 ->
-               compare
-                 (Model.Package.name p1.Colis_batch_report_common.Package.package)
-                 (Model.Package.name p2.Colis_batch_report_common.Package.package))
-            !packages))
-      package_by_status
-  in
   fpf fmt "<h2>Summary</h2><ul>";
-  List.iter
-    (fun (status, packages) ->
-       fpf fmt "<li><a href=\"#%a\">%a</a> (%d)</li>"
-         Model.Scenario.Status.pp status
-         Model.Scenario.Status.pp status
-         (List.length packages))
-    package_by_status;
+  scenario.packages_by_status |> List.iter (fun (status, packages) ->
+      fpf fmt "<li><a href=\"#%a\">%a</a> (%d)</li>"
+        Model.Scenario.Status.pp status
+        Model.Scenario.Status.pp status
+        (List.length packages));
   fpf fmt "</ul>";
-  List.iter
-    (fun (status, packages) ->
-       fpf fmt "<h2 id=\"%a\">%a</h2><ul>"
-         Model.Scenario.Status.pp status
-         Model.Scenario.Status.pp status;
-       List.iter
-         (fun package ->
-            fpf fmt "<li><a href=\"../../package/%s/index.html\">%s</a></li>"
-              (Model.Package.safe_name package.Colis_batch_report_common.Package.package)
-              (Model.Package.name package.Colis_batch_report_common.Package.package)
-         )
-         packages;
-       fpf fmt "</ul>")
-    package_by_status
+  scenario.packages_by_status |> List.iter (fun (status, packages) ->
+      fpf fmt "<h2 id=\"%a\">%a</h2><ul>"
+        Model.Scenario.Status.pp status
+        Model.Scenario.Status.pp status;
+      List.iter
+        (fun package ->
+           fpf fmt "<li><a href=\"../../package/%s/index.html\">%s</a></li>"
+             (Model.Package.safe_name package.Colis_batch_report_common.Package.package)
+             (Model.Package.name package.Colis_batch_report_common.Package.package)
+        )
+        packages;
+      fpf fmt "</ul>")
 
-let generate_scenario ~prefix report name scenario =
+let generate_scenario ~prefix name scenario =
   (
     Colis_batch_report_common.with_formatter_to_file ~prefix
       ["scenario"; Model.Scenarii.Name.to_string name; "flowchart.dot"]
     @@ fun fmt ->
-    Model.Scenario.pp_clean_as_dot fmt scenario
+    Model.Scenario.pp_clean_as_dot fmt scenario.scenario
   );
   (
     Common.with_formatter_to_html_report
@@ -113,7 +81,7 @@ let generate_scenario ~prefix report name scenario =
       [Model.Scenarii.Name.to_fancy_string name,
        ["scenario"; Model.Scenarii.Name.to_string name; "index.html"]]
     @@ fun fmt ->
-    pp_scenario fmt report name scenario
+    pp_scenario fmt scenario
   )
 
 let generate ~prefix report =
@@ -123,7 +91,6 @@ let generate ~prefix report =
     pp_index fmt report
   );
   Scripts.generate ~prefix report.scripts;
-  List.iter
-    (fun (name, scenario) ->
-       generate_scenario ~prefix report name scenario)
-    Model.Scenarii.all
+  report.scenarios |> List.iter (fun (name, scenario) ->
+      generate_scenario ~prefix name scenario
+    )
