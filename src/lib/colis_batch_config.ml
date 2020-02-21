@@ -8,7 +8,6 @@ type t =
     mutable external_sources : string ;
     mutable package : string ;
     mutable corpus : string ;
-    mutable contents : string ;
     mutable cache : string }
 [@@deriving yojson {exn=true}]
 
@@ -20,7 +19,6 @@ let default () =
     external_sources = "" ;
     package = "" ;
     corpus = "" ;
-    contents = "" ;
     cache = "" }
 
 let config = ref (default ())
@@ -36,10 +34,6 @@ let pp_arg_list = Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ")
 
 let speclist =
   Arg.[
-    "--contents",
-    String (fun s -> !config.contents <- s),
-    spf "FILE Sets the path to the contents file (default: %s)" default.contents;
-
     "--cpu-timeout",
     Float (fun f -> !config.cpu_timeout <- f),
     spf "NB Sets the CPU timeout, in seconds (default: %.0f)" default.cpu_timeout;
@@ -83,9 +77,6 @@ let speclist =
   |> List.sort compare |> Arg.align
 
 let check_config () =
-  if not (!config.contents = "") && not (Sys.file_exists !config.contents) then
-    raise (Arg.Bad (spf "Contents file (%s), when set, must exist." !config.contents));
-
   if not (!config.cpu_timeout > 0.) then
     raise (Arg.Bad (spf "CPU timeout (%.0f) must be positive." !config.cpu_timeout));
 
