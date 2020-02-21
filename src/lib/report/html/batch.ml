@@ -45,7 +45,7 @@ let pp_index fmt report =
    (parsing error, conversion, rejection, etc.). This page should also list the
    unsupported utilities in scripts. *)
 
-let pp_scenario fmt report scenario =
+let pp_scenario fmt report name scenario =
   fpf fmt "<div style=\"margin: auto;\">%a</div>"
     Common.pp_viz "flowchart.dot";
   let all_status = Model.Scenario.all_status scenario in
@@ -53,21 +53,18 @@ let pp_scenario fmt report scenario =
     let package_by_status =
       List.map (fun status -> (status, ref [])) all_status
     in
-    List.iter
-      (fun package ->
-         List.iter
-           (fun (_name, scenario) ->
-              List.iter
-                (fun (status, states) ->
-                   if states <> 0 then
-                     match List.assoc_opt status package_by_status with
-                     | None -> ()
-                     | Some others -> others := package :: !others)
-              (Model.Scenario.states_sum scenario)
-           )
-           package.Colis_batch_report_common.Package.scenarii
-      )
-      report.packages;
+    report.packages |> List.iter (fun package ->
+        package.Colis_batch_report_common.Package.scenarii |> List.iter (fun (name', scenario) ->
+            if name' = name then
+              (
+                scenario |> Model.Scenario.states_sum |> List.iter (fun (status, states) ->
+                    if states <> 0 then
+                      match List.assoc_opt status package_by_status with
+                      | None -> ()
+                      | Some others -> others := package :: !others)
+              )
+          )
+      );
     List.map
       (fun (status, packages) ->
          (status,
@@ -116,7 +113,7 @@ let generate_scenario ~prefix report name scenario =
       [Model.Scenarii.Name.to_fancy_string name,
        ["scenario"; Model.Scenarii.Name.to_string name; "index.html"]]
     @@ fun fmt ->
-    pp_scenario fmt report scenario
+    pp_scenario fmt report name scenario
   )
 
 let generate ~prefix report =
