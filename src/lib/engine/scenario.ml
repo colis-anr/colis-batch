@@ -60,8 +60,8 @@ var/www"
   |> String.split_on_char '\n'
   |> List.map (String.split_on_char '/')
   |> List.fold_left
-    (fun fhs dir -> Colis.Symbolic.FilesystemSpec.add_dir dir fhs)
-    Colis.Symbolic.FilesystemSpec.empty
+    (fun fhs dir -> Colis.FilesystemSpec.add_dir dir fhs)
+    Colis.FilesystemSpec.empty
 
 exception NotConverted
 
@@ -97,10 +97,10 @@ let run ~cpu_timeout ~package scenario =
               |> List.cons (icallutility "true" []) (* in case of empty list *)
               |> isequence_l |> program
             in
-            let sym_states = List.map (Colis.Symbolic.to_symbolic_state ~vars:[] ~arguments:[]) states in
+            let sym_states = List.map (Colis.SymbolicConstraints.to_symbolic_state ~vars:[] ~arguments:[]) states in
             let (success, _error, incomplete) =
               Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
-              Colis.Symbolic.interp_program
+              Colis.SymbolicConstraints.interp_program
                 ~loop_limit:200
                 ~stack_size:200
                 ~argument0:"colis_internal_unpack"
@@ -127,8 +127,8 @@ let run ~cpu_timeout ~package scenario =
               in
               (success, error, make_ran_node ~incomplete:(incomplete<>[]) states)
             with
-            | Colis.Internals.Errors.Unsupported (utility, msg) ->
-              ([], [], make_ran_node ~unsupported:[utility, msg] states)
+            | Colis.Internals.Errors.Unknown_behaviour (utility, msg) ->
+              ([], [], make_ran_node ~unknown:[utility, msg] states)
             | Colis.Internals.Errors.CpuTimeLimitExceeded ->
               ([], [], make_ran_node ~timeout:true states)
             | Colis.Internals.Errors.MemoryLimitExceeded ->
@@ -144,12 +144,12 @@ let run ~cpu_timeout ~package scenario =
   in
   try
     Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
-    let root = Colis.Constraints.Var.fresh ~hint:"r" () in
+    let root = Colis_constraints.Var.fresh ~hint:"r" () in
     let disj =
-      Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
-      Colis.Symbolic.add_fs_spec_to_clause root Colis.Constraints.Clause.true_sat_conj fhs
+      Colis_constraints.Clause.with_shadow_variables @@ fun () ->
+      Colis.SymbolicConstraints.add_fs_spec_to_clause root Colis_constraints.Clause.true_sat_conj fhs
     in
-    let stas = List.map (Colis.Symbolic.to_state ~prune_init_state:false ~root) disj in
+    let stas = List.map (Colis.SymbolicConstraints.to_state ~prune_init_state:false ~root) disj in
     run stas scenario
   with
   (* FIXME: maybe a cleaner way would be to have an initial node of a scenario? *)

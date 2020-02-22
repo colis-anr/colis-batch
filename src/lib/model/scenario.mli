@@ -49,32 +49,32 @@ val ran_node_gen_incomplete : 'a ran_node_gen -> bool
 val ran_node_gen_timeout : 'a ran_node_gen -> bool
 val ran_node_gen_oomemory : 'a ran_node_gen -> bool
 val ran_node_gen_notconverted : 'a ran_node_gen -> bool
-val ran_node_gen_unsupported : 'a ran_node_gen -> (string * string) list
-val ran_node_gen_has_unsupported : 'a ran_node_gen -> bool
+val ran_node_gen_unknown : 'a ran_node_gen -> (string * string) list
+val ran_node_gen_has_unknown : 'a ran_node_gen -> bool
 val ran_node_gen_unexpected : 'a ran_node_gen -> string list
 val ran_node_gen_has_unexpected : 'a ran_node_gen -> bool
 
-type ran_leaf = Colis.Symbolic.Semantics.state list
-type ran_node = Colis.Symbolic.Semantics.state list ran_node_gen
+type ran_leaf = Colis.SymbolicConstraints.state list
+type ran_node = Colis.SymbolicConstraints.state list ran_node_gen
 
 val make_ran_node :
   ?absent:bool -> ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool -> ?notconverted:bool ->
-  ?unsupported:(string * string) list -> ?unexpected:exn list ->
-  Colis.Symbolic.Semantics.state list -> ran_node
+  ?unknown:(string * string) list -> ?unexpected:exn list ->
+  Colis.SymbolicConstraints.state list -> ran_node
 
 val ran_node_incomplete : ran_node -> bool
 val ran_node_timeout : ran_node -> bool
 val ran_node_oomemory : ran_node -> bool
 val ran_node_notconverted : ran_node -> bool
-val ran_node_unsupported : ran_node -> (string * string) list
-val ran_node_has_unsupported : ran_node -> bool
+val ran_node_unknown : ran_node -> (string * string) list
+val ran_node_has_unknown : ran_node -> bool
 val ran_node_unexpected : ran_node -> string list
 val ran_node_has_unexpected : ran_node -> bool
 
 type ran = (ran_leaf, ran_node) t
 [@@deriving yojson]
 
-val states : ran -> (Status.t * Colis.Symbolic.Semantics.state list) list
+val states : ran -> (Status.t * Colis.SymbolicConstraints.state list) list
 
 val pp_ran_as_dot : ?name:string -> Format.formatter -> ran -> unit
 

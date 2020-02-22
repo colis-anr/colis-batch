@@ -36,7 +36,7 @@ and numbers_scenarios =
     timeout : int ;
     out_of_memory : int ;
     not_converted : int ;
-    unsupported_utility : int ;
+    unknown_utility : int ;
     unexpected : int ;
     problems : int }
 
@@ -88,7 +88,7 @@ let enrich_numbers (report : t) : numbers =
     let timeout = ref 0 in
     let out_of_memory = ref 0 in
     let not_converted = ref 0 in
-    let unsupported_utility = ref 0 in
+    let unknown_utility = ref 0 in
     let unexpected = ref 0 in
     List.iter
       (fun package ->
@@ -101,7 +101,7 @@ let enrich_numbers (report : t) : numbers =
                 if ran_node_gen_timeout r then incr timeout;
                 if ran_node_gen_oomemory r then incr out_of_memory;
                 if ran_node_gen_notconverted r then incr not_converted;
-                if ran_node_gen_has_unsupported r then incr unsupported_utility;
+                if ran_node_gen_has_unknown r then incr unknown_utility;
                 if ran_node_gen_has_unexpected r then incr unexpected
               | Partial r ->
                 incr partial;
@@ -109,14 +109,14 @@ let enrich_numbers (report : t) : numbers =
                 if ran_node_gen_timeout r then incr timeout;
                 if ran_node_gen_oomemory r then incr out_of_memory;
                 if ran_node_gen_notconverted r then incr not_converted;
-                if ran_node_gen_has_unsupported r then incr unsupported_utility;
+                if ran_node_gen_has_unknown r then incr unknown_utility;
                 if ran_node_gen_has_unexpected r then incr unexpected
               | Complete -> incr complete)
            package.Package.scenarii)
       report.packages;
     let problems =
       !incomplete + !timeout + !out_of_memory
-      + !not_converted + !unsupported_utility + !unexpected
+      + !not_converted + !unknown_utility + !unexpected
     in
     { stotal ; per_package ;
       complete = !complete ;
@@ -126,7 +126,7 @@ let enrich_numbers (report : t) : numbers =
       timeout = !timeout ;
       out_of_memory = !out_of_memory ;
       not_converted = !not_converted ;
-      unsupported_utility = !unsupported_utility ;
+      unknown_utility = !unknown_utility ;
       unexpected = !unexpected ;
       problems }
   in
@@ -179,10 +179,10 @@ let enrich_scripts (report : t) : scripts =
                  are called (with a list of dashed arguments and the
                  number of non-dashed ones). *)
               let utilities = Model.Maintscript.utilities script in
-              let nb_unsupported =
+              let nb_unknown =
                 utilities
                 |> List.map fst
-                |> List.filter (fnot Colis.Symbolic.Utility.is_registered)
+                |> List.filter (fnot Colis.SymbolicConstraints.is_registered)
                 |> List.length
                 |> foi
               in
@@ -218,10 +218,10 @@ let enrich_scripts (report : t) : scripts =
                     @ utility.occurrences
                   in
                   let score =
-                    if Colis.Symbolic.Utility.is_registered name then
+                    if Colis.SymbolicConstraints.is_registered name then
                       0.
                     else
-                      utility.score +. 1. /. nb_unsupported
+                      utility.score +. 1. /. nb_unknown
                   in
                   Hashtbl.replace utilities_table name
                     { name ; options ; occurrences ; score }))));

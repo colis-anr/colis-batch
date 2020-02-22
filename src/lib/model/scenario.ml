@@ -144,7 +144,7 @@ type 'a ran_node_gen =
     timeout : bool ;
     oomemory : bool ;
     notconverted : bool ;
-    unsupported : (string * string) list ;
+    unknown : (string * string) list ;
     unexpected : string list }
 [@@deriving yojson]
 
@@ -152,23 +152,23 @@ let ran_node_gen_incomplete r = r.incomplete
 let ran_node_gen_timeout r = r.timeout
 let ran_node_gen_oomemory r = r.oomemory
 let ran_node_gen_notconverted r = r.notconverted
-let ran_node_gen_unsupported r = r.unsupported
-let ran_node_gen_has_unsupported r = r.unsupported <> []
+let ran_node_gen_unknown r = r.unknown
+let ran_node_gen_has_unknown r = r.unknown <> []
 let ran_node_gen_unexpected r = r.unexpected
 let ran_node_gen_has_unexpected r = r.unexpected <> []
 
 let ran_node_gen_had_problem r =
   ran_node_gen_incomplete r || ran_node_gen_timeout r || ran_node_gen_oomemory r
-  || ran_node_gen_notconverted r || ran_node_gen_has_unsupported r
+  || ran_node_gen_notconverted r || ran_node_gen_has_unknown r
   || ran_node_gen_has_unexpected r
 
 let make_ran_node_gen
     ?(absent=false) ?(incomplete=false) ?(timeout=false) ?(oomemory=false) ?(notconverted=false)
-    ?(unsupported=[]) ?(unexpected=[])
+    ?(unknown=[]) ?(unexpected=[])
     states_before
   = { states_before ; absent ;
       incomplete ; timeout ; oomemory ; notconverted ;
-      unsupported ; unexpected = List.map Printexc.to_string unexpected }
+      unknown ; unexpected = List.map Printexc.to_string unexpected }
 
 (* ============================ [ Ran Scenario ] ============================ *)
 
@@ -180,8 +180,8 @@ let ran_node_incomplete = ran_node_gen_incomplete
 let ran_node_timeout = ran_node_gen_timeout
 let ran_node_oomemory = ran_node_gen_oomemory
 let ran_node_notconverted = ran_node_gen_notconverted
-let ran_node_unsupported = ran_node_gen_unsupported
-let ran_node_has_unsupported = ran_node_gen_has_unsupported
+let ran_node_unknown = ran_node_gen_unknown
+let ran_node_has_unknown = ran_node_gen_has_unknown
 let ran_node_unexpected = ran_node_gen_unexpected
 let ran_node_has_unexpected = ran_node_gen_has_unexpected
 
@@ -219,7 +219,7 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
       fpf fmt "<TR><TD>out of memory</TD></TR>";
     if dec.notconverted then
       fpf fmt "<TR><TD>not converted</TD></TR>";
-    if dec.unsupported <> [] then
+    if dec.unknown <> [] then
       fpf fmt "<TR><TD>unsup. utility</TD></TR>";
     if dec.unexpected <> [] then
       fpf fmt "<TR><TD>unexpected exception</TD></TR>"
@@ -263,7 +263,7 @@ let summarize_ran_node (ran_node : ran_node) =
     timeout = ran_node.timeout ;
     oomemory = ran_node.oomemory ;
     notconverted = ran_node.notconverted ;
-    unsupported = ran_node.unsupported ;
+    unknown = ran_node.unknown ;
     unexpected = ran_node.unexpected }
 
 let rec summarize = function
@@ -290,7 +290,7 @@ let merge_ran_node_gens a b =
     timeout = a.timeout || b.timeout ;
     oomemory = a.oomemory || b.oomemory ;
     notconverted = a.notconverted || b.notconverted ;
-    unsupported = a.unsupported @ b.unsupported ;
+    unknown = a.unknown @ b.unknown ;
     unexpected = a.unexpected @ b.unexpected }
 
 type 'a coverage = Complete | Partial of 'a ran_node_gen | Null of 'a ran_node_gen
