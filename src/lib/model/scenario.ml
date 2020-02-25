@@ -68,11 +68,11 @@ let pp_as_dot
     List.iter (fpf fmt " %s") args
   in
   let hash = Hashtbl.hash in
-  let pp_edge_from_father fmt father me label sc pp_edge_to__decoration edge_to__decoration_color decoration =
+  let pp_edge_from_father fmt father me label pp_edge_to__decoration edge_to__decoration_color decoration =
     fpf fmt "%d -> %d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD ALIGN=\"left\">%s</TD></TR>%a</TABLE> >%a];@\n"
       father me label
-      (pp_edge_to__decoration sc) decoration
-      (pp_color (edge_to__decoration_color sc)) decoration
+      pp_edge_to__decoration decoration
+      (pp_color edge_to__decoration_color) decoration
   in
   let rec pp_as_dot father label fmt sc =
     match sc with
@@ -80,19 +80,19 @@ let pp_as_dot
       fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
         Status.pp status
-        (pp_leaf_decoration sc) leaf_decoration
-        (pp_color (leaf_decoration_color sc)) leaf_decoration;
+        pp_leaf_decoration leaf_decoration
+        (pp_color leaf_decoration_color) leaf_decoration;
       pp_edge_from_father
-        fmt father (hash sc) label sc
+        fmt father (hash sc) label
         pp_edge_to_leaf_decoration edge_to_leaf_decoration_color leaf_decoration;
 
     | Unpack (node_decoration, on_success) ->
       fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD><I>unpack</I></TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
-        (pp_node_decoration sc) node_decoration
-        (pp_color (node_decoration_color sc)) node_decoration;
+        pp_node_decoration node_decoration
+        (pp_color node_decoration_color) node_decoration;
       pp_edge_from_father
-        fmt father (hash sc) label sc
+        fmt father (hash sc) label
         pp_edge_to_node_decoration edge_to_node_decoration_color node_decoration;
       fpf fmt "@\n@[<h 2>  %a@]@\n"
         (pp_as_dot (hash sc) "") on_success
@@ -101,10 +101,10 @@ let pp_as_dot
       fpf fmt "%d [label=< <TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"><TR><TD>%a</TD></TR>%a</TABLE> >%a];@\n"
         (hash sc)
         pp_run_script script
-        (pp_node_decoration sc) node_decoration
-        (pp_color (node_decoration_color sc)) node_decoration;
+        pp_node_decoration node_decoration
+        (pp_color node_decoration_color) node_decoration;
       pp_edge_from_father
-        fmt father (hash sc) label sc
+        fmt father (hash sc) label
         pp_edge_to_node_decoration edge_to_node_decoration_color node_decoration;
       fpf fmt "@\n@[<h 2>  %a@]@\n@[<h 2>  %a@]@\n"
         (pp_as_dot (hash sc) "OK") on_success
@@ -127,13 +127,12 @@ let run_script ~on_success ~on_error ?(args=[]) key =
   RunScript ((), (key, args), on_success, on_error)
 
 let pp_clean_as_dot ?name fmt sc =
-  let pp_nop _ _ _ = () in
-  let no_color _ _ = None in
+  let pp_nop _ _ = () in
   pp_as_dot ?name
     ~pp_leaf_decoration:pp_nop ~pp_edge_to_leaf_decoration:pp_nop
     ~pp_node_decoration:pp_nop ~pp_edge_to_node_decoration:pp_nop
-    ~leaf_decoration_color:no_color ~edge_to_leaf_decoration_color:no_color
-    ~node_decoration_color:no_color ~edge_to_node_decoration_color:no_color
+    ~leaf_decoration_color:(fun _ -> None) ~edge_to_leaf_decoration_color:(fun _ -> None)
+    ~node_decoration_color:(fun _ -> None) ~edge_to_node_decoration_color:(fun _ -> None)
     fmt sc
 
 (* ============================ [ Ran Scenario ] ============================ *)
@@ -200,17 +199,17 @@ let states sc =
   |> List.group compare
 
 let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
-  let pp_leaf_decoration _ _fmt _states = ()
+  let pp_leaf_decoration _fmt _states = ()
   in
-  let pp_edge_to_leaf_decoration _ fmt states =
+  let pp_edge_to_leaf_decoration fmt states =
     fpf fmt "<TR><TD ALIGN=\"left\">(%d states)</TD></TR>" (List.length states)
   in
-  let leaf_decoration_color _ states =
+  let leaf_decoration_color states =
     if states = [] then Some "gray" else None
   in
   let edge_to_leaf_decoration_color = leaf_decoration_color
   in
-  let pp_node_decoration _ fmt dec =
+  let pp_node_decoration fmt dec =
     if dec.incomplete then
       fpf fmt "<TR><TD>incomplete</TD></TR>";
     if dec.timeout then
@@ -224,10 +223,10 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
     if dec.unexpected <> [] then
       fpf fmt "<TR><TD>unexpected exception</TD></TR>"
   in
-  let pp_edge_to_node_decoration _ fmt dec =
+  let pp_edge_to_node_decoration fmt dec =
     fpf fmt "<TR><TD ALIGN=\"left\">(%d states)</TD></TR>" (List.length dec.states_before)
   in
-  let node_decoration_color _ dec =
+  let node_decoration_color dec =
     if ran_node_gen_had_problem dec then
       Some "brown"
     else if dec.states_before = [] then
@@ -235,7 +234,7 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
     else
       None
   in
-  let edge_to_node_decoration_color _ dec =
+  let edge_to_node_decoration_color dec =
     if dec.states_before = [] then
       Some "gray"
     else
