@@ -10,7 +10,9 @@ val content : t -> string list
 
 val safe_name : t -> string
 
+val has_maintscript : t -> Maintscript.Key.t -> bool
 val maintscript : t -> Maintscript.Key.t -> Maintscript.t option
+
 val maintscripts : t -> Maintscript.t list
 val iter_maintscripts : (Maintscript.t -> unit) -> t -> unit
 

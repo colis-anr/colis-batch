@@ -67,7 +67,7 @@ exception NotConverted
 
 let run_script ~cmd_line_arguments ~states ~package ~script =
   match Model.Package.maintscript package script with
-  | None -> (states, [], [])
+  | None -> assert false (*(states, [], [])*)
   | Some script ->
     try
       Model.Maintscript.interp (* FIXME: that has to move to Engine *)
@@ -85,51 +85,62 @@ let run ~cpu_timeout ~package scenario =
 
     | Unpack ((), on_success) ->
       (
-        let unpack_script =
-          let open Colis.Language.SyntaxHelpers in
-          Model.Package.content package
-          |> List.map (fun file -> icallutility "colis_internal_unsafe_touch" [lliteral file])
-          |> List.cons (icallutility "true" []) (* in case of empty list *)
-          |> isequence_l |> program
-        in
-        let sym_states = List.map (Colis.Symbolic.to_symbolic_state ~vars:[] ~arguments:[]) states in
-        let (success, _error, incomplete) =
-          Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
-          Colis.Symbolic.interp_program
-            ~loop_limit:200
-            ~stack_size:200
-            ~argument0:"colis_internal_unpack"
-            sym_states unpack_script
-        in
-        assert (incomplete = []);
-        Unpack (make_ran_node states, run success on_success)
+        let content = Model.Package.content package in
+        if content = [] then
+          Unpack (make_ran_node ~absent:true states, run states on_success)
+        else
+          (
+            let unpack_script =
+              let open Colis.Language.SyntaxHelpers in
+              content
+              |> List.map (fun file -> icallutility "colis_internal_unsafe_touch" [lliteral file])
+              |> List.cons (icallutility "true" []) (* in case of empty list *)
+              |> isequence_l |> program
+            in
+            let sym_states = List.map (Colis.Symbolic.to_symbolic_state ~vars:[] ~arguments:[]) states in
+            let (success, _error, incomplete) =
+              Colis.Constraints.Clause.with_shadow_variables @@ fun () ->
+              Colis.Symbolic.interp_program
+                ~loop_limit:200
+                ~stack_size:200
+                ~argument0:"colis_internal_unpack"
+                sym_states unpack_script
+            in
+            assert (incomplete = []);
+            Unpack (make_ran_node states, run success on_success)
+          )
       )
 
     | RunScript ((), (script, cmd_line_arguments), on_success, on_error) ->
-      if states = [] then
-        RunScript (make_ran_node [], (script, cmd_line_arguments),
-                   run [] on_success, run [] on_error)
-      else
-        let (success, error, ran_node) =
-          try
-            let (success, error, incomplete) =
-              run_script ~cmd_line_arguments ~states ~package ~script
-            in
-            (success, error, make_ran_node ~incomplete:(incomplete<>[]) states)
-          with
-          | Colis.Internals.Errors.Unsupported (utility, msg) ->
-            ([], [], make_ran_node ~unsupported:[utility, msg] states)
-          | Colis.Internals.Errors.CpuTimeLimitExceeded ->
-            ([], [], make_ran_node ~timeout:true states)
-          | Colis.Internals.Errors.MemoryLimitExceeded ->
-            ([], [], make_ran_node ~oomemory:true states)
-          | NotConverted ->
-            ([], [], make_ran_node ~notconverted:true states)
-          | exn ->
-            ([], [], make_ran_node ~unexpected:[exn] states)
-        in
-        RunScript (ran_node, (script, cmd_line_arguments),
-                   run success on_success, run error on_error)
+      (
+        if not (Model.Package.has_maintscript package script) then
+          RunScript (make_ran_node ~absent:true states, (script, cmd_line_arguments),
+                     run states on_success, run [] on_error)
+        else if states = [] then
+          RunScript (make_ran_node [], (script, cmd_line_arguments),
+                     run [] on_success, run [] on_error)
+        else
+          let (success, error, ran_node) =
+            try
+              let (success, error, incomplete) =
+                run_script ~cmd_line_arguments ~states ~package ~script
+              in
+              (success, error, make_ran_node ~incomplete:(incomplete<>[]) states)
+            with
+            | Colis.Internals.Errors.Unsupported (utility, msg) ->
+              ([], [], make_ran_node ~unsupported:[utility, msg] states)
+            | Colis.Internals.Errors.CpuTimeLimitExceeded ->
+              ([], [], make_ran_node ~timeout:true states)
+            | Colis.Internals.Errors.MemoryLimitExceeded ->
+              ([], [], make_ran_node ~oomemory:true states)
+            | NotConverted ->
+              ([], [], make_ran_node ~notconverted:true states)
+            | exn ->
+              ([], [], make_ran_node ~unexpected:[exn] states)
+          in
+          RunScript (ran_node, (script, cmd_line_arguments),
+                     run success on_success, run error on_error)
+      )
   in
   try
     Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;

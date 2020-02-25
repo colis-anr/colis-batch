@@ -20,6 +20,7 @@ let maintscripts pkg = pkg.maintscripts
 let iter_maintscripts f pkg = List.iter f pkg.maintscripts
 
 let maintscript pkg key = List.find_opt (Maintscript.has_key key) pkg.maintscripts
+let has_maintscript pkg key = maintscript pkg key <> None
 
 let parse_from_dir path =
   if not (Sys.file_exists path && Sys.is_directory path) then

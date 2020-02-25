@@ -139,6 +139,7 @@ let pp_clean_as_dot ?name fmt sc =
 
 type 'a ran_node_gen =
   { states_before : 'a ;
+    absent : bool ;
     incomplete : bool ;
     timeout : bool ;
     oomemory : bool ;
@@ -162,10 +163,10 @@ let ran_node_gen_had_problem r =
   || ran_node_gen_has_unexpected r
 
 let make_ran_node_gen
-    ?(incomplete=false) ?(timeout=false) ?(oomemory=false) ?(notconverted=false)
+    ?(absent=false) ?(incomplete=false) ?(timeout=false) ?(oomemory=false) ?(notconverted=false)
     ?(unsupported=[]) ?(unexpected=[])
     states_before
-  = { states_before ;
+  = { states_before ; absent ;
       incomplete ; timeout ; oomemory ; notconverted ;
       unsupported ; unexpected = List.map Printexc.to_string unexpected }
 
@@ -229,7 +230,7 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
   let node_decoration_color dec =
     if ran_node_gen_had_problem dec then
       Some "brown"
-    else if dec.states_before = [] then
+    else if dec.absent || dec.states_before = [] then
       Some "gray"
     else
       None
@@ -257,6 +258,7 @@ let summarize_ran_leaf = List.length
 
 let summarize_ran_node (ran_node : ran_node) =
   { states_before = List.length ran_node.states_before ;
+    absent = ran_node.absent ;
     incomplete = ran_node.incomplete ;
     timeout = ran_node.timeout ;
     oomemory = ran_node.oomemory ;
@@ -283,6 +285,7 @@ let states_sum sc =
 
 let merge_ran_node_gens a b =
   { states_before = a.states_before ; (* FIXME: what sense should that have? *)
+    absent = a.absent || b.absent ;
     incomplete = a.incomplete || b.incomplete ;
     timeout = a.timeout || b.timeout ;
     oomemory = a.oomemory || b.oomemory ;

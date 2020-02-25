@@ -30,7 +30,7 @@ val all_status : ('leaf, 'node) t -> Status.t list
 
 type clean = (unit, unit) t
 [@@deriving yojson]
-    
+
 val status : Status.t -> clean
 
 val unpack : on_success:clean -> clean
@@ -58,7 +58,7 @@ type ran_leaf = Colis.Symbolic.Semantics.state list
 type ran_node = Colis.Symbolic.Semantics.state list ran_node_gen
 
 val make_ran_node :
-  ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool -> ?notconverted:bool ->
+  ?absent:bool -> ?incomplete:bool -> ?timeout:bool -> ?oomemory:bool -> ?notconverted:bool ->
   ?unsupported:(string * string) list -> ?unexpected:exn list ->
   Colis.Symbolic.Semantics.state list -> ran_node
 
