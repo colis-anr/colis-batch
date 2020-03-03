@@ -62,8 +62,8 @@ let pp_scenario_summary fmt (name, scenario) =
     | Partial r | Null r ->
       List.iter
         (fun (utility, message) ->
-           fpf fmt "<p>Unsupported: %s: %s</p>" utility message)
-        (ran_node_gen_unsupported r);
+           fpf fmt "<p>Unknown: %s: %s</p>" utility message)
+        (ran_node_gen_unknown r);
       List.iter
         (fpf fmt "<p>Unexpected exception: %s</p>")
         (ran_node_gen_unexpected r)
@@ -102,7 +102,7 @@ let pp_maintscript_colis fmt maintscript =
   | None ->
     pp_status fmt "Accepted";
     fpf fmt "<h2>Colis script</h2><pre><code>";
-    Colis.pp_print_colis fmt (Model.Maintscript.colis maintscript);
+    Colis.Language.pp_print_colis fmt (Model.Maintscript.colis maintscript);
     fpf fmt "</code></pre>";
     fpf fmt "<p>Present utilities: %a.</p>"
       (Format.pp_print_list
@@ -160,8 +160,8 @@ let generate_scenario_state ~prefix tap_package name id state status =
     Colis_batch_report_common.with_formatter_to_file ~prefix
       (Common.path_from_tap (tap_package @ ["DUMMY", ["scenario"; Model.Scenarii.Name.to_string name; status; id ^ ".dot"]]))
     @@ fun fmt ->
-    let clause = state.Colis.Symbolic.Semantics.filesystem.clause in
-    Colis.Constraints.Clause.pp_sat_conj_as_dot
+    let clause = state.Colis.SymbolicConstraints.filesystem.clause in
+    Colis_constraints.Clause.pp_sat_conj_as_dot
       ~name:(Format.asprintf "%s-%s" status id)
       fmt clause
   );
@@ -173,7 +173,7 @@ let generate_scenario_state ~prefix tap_package name id state status =
     @@ fun fmt ->
     Common.pp_viz fmt (id ^ ".dot");
     let open Colis in
-    let open Symbolic.Semantics in
+    let open SymbolicConstraints in
     if not (Common.Stdout.is_empty state.stdout) then
       (
         fpf fmt "<h2>stdout</h2><pre>";

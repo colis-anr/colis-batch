@@ -50,11 +50,11 @@ val utilities : t -> (string * (string list * int) list) list
 
 val interp :
   cmd_line_arguments:string list ->
-  states:Colis.Symbolic.Semantics.state list ->
+  states:Colis.SymbolicConstraints.state list ->
   package_name:string ->
   t ->
-  Colis.Symbolic.Semantics.state list
-  * Colis.Symbolic.Semantics.state list
-  * Colis.Symbolic.Semantics.state list
+  Colis.SymbolicConstraints.state list
+  * Colis.SymbolicConstraints.state list
+  * Colis.SymbolicConstraints.state list
 (** Interprets the script. Raises [Failure "Maintscript.colis"] if the
    script cannot be translated. *)

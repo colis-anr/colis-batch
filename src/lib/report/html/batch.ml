@@ -18,7 +18,7 @@ let pp_scenarios_summary fmt (numbers: numbers) =
       numbers.scenarios.timeout, "timeouts" ;
       numbers.scenarios.out_of_memory, "out of memory" ;
       numbers.scenarios.incomplete, "incompletness" ;
-      numbers.scenarios.unsupported_utility, "unsupported utilities" ;
+      numbers.scenarios.unknown_utility, "unknown utilities" ;
       numbers.scenarios.unexpected, "unexpected exceptions" ]
 
 let pp_index fmt report =

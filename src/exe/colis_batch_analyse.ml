@@ -6,7 +6,7 @@ let () =
   Colis.Internals.Options.cpu_time_limit := config.cpu_timeout;
   Colis.Internals.Options.set_memory_limit config.memory_limit;
   Colis.Internals.Options.external_sources := config.external_sources;
-  Colis.Internals.Options.fail_on_unknown_utilities := true
+  Colis.Internals.Options.unknown_behaviour := Exception
 
 let pad_int_left_to y x =
   let len x = iof (ceil (log10 (foi x +. 1.))) in
