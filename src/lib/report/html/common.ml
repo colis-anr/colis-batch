@@ -209,27 +209,36 @@ let extract_static ~prefix =
 let percentage a b =
   100. *. (significant ~precision:2 ((foi a) /. (foi b)))
 
-let pp_details_list fmt ~text_after ~total cases =
-  fpf fmt "<p>Out of a total of <strong>%d</strong> %s" total text_after;
+let pp_details_list fmt ?if_empty ~text_after ~total cases =
   let cases =
     cases
     |> List.filter (fun c -> fst c <> 0)
     |> List.sort (fun c1 c2 -> compare (fst c1) (fst c2))
   in
-  match cases with
-  | [] -> failwith "pp_details_list"
-  | [nb, text] ->
-    fpf fmt ", %d (%g%%) %s.</p>"
-      nb (percentage nb total) text
-  | (nb, text) :: cases ->
-    fpf fmt ":</p><ul>";
-    List.iter
-      (fun (nb, text) ->
-         fpf fmt "<li><strong>%d</strong> (%g%%) %s,</li>"
-           nb (percentage nb total) text)
-      (List.rev cases);
-    fpf fmt "<li>and <strong>%d</strong> (%g%%) %s.</li></ul>"
-      nb (percentage nb total) text
+  if cases = [] then
+    (
+      match if_empty with
+      | None -> failwith "pp_details_list"
+      | Some if_empty -> fpf fmt "<p>%s</p>" if_empty
+    )
+  else
+    (
+      fpf fmt "<p>Out of a total of <strong>%d</strong> %s" total text_after;
+      match cases with
+      | [] -> assert false
+      | [nb, text] ->
+        fpf fmt ", %d (%g%%) %s.</p>"
+          nb (percentage nb total) text
+      | (nb, text) :: cases ->
+        fpf fmt ":</p><ul>";
+        List.iter
+          (fun (nb, text) ->
+             fpf fmt "<li><strong>%d</strong> (%g%%) %s,</li>"
+               nb (percentage nb total) text)
+          (List.rev cases);
+        fpf fmt "<li>and <strong>%d</strong> (%g%%) %s.</li></ul>"
+          nb (percentage nb total) text
+    )
 
 let slug str =
   let out = Bytes.create (String.length str) in

@@ -11,6 +11,7 @@ let pp_scenarios_summary fmt (numbers: numbers) =
       numbers.scenarios.failure, "could not be run at all" ];
 
   Common.pp_details_list fmt
+    ~if_empty:"There were no problems."
     ~text_after:"problems"
     ~total:numbers.scenarios.problems
     [ numbers.scenarios.not_converted, "scripts not converted" ;

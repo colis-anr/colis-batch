@@ -90,30 +90,28 @@ let enrich_numbers (report : t) : numbers =
     let not_converted = ref 0 in
     let unknown_utility = ref 0 in
     let unexpected = ref 0 in
-    List.iter
-      (fun package ->
-         List.iter
-           (fun (_name, scenario) ->
-              let open Model.Scenario in
-              match coverage scenario with
-              | Null r ->
-                if ran_node_gen_incomplete r then incr incomplete;
-                if ran_node_gen_timeout r then incr timeout;
-                if ran_node_gen_oomemory r then incr out_of_memory;
-                if ran_node_gen_notconverted r then incr not_converted;
-                if ran_node_gen_has_unknown r then incr unknown_utility;
-                if ran_node_gen_has_unexpected r then incr unexpected
-              | Partial r ->
-                incr partial;
-                if ran_node_gen_incomplete r then incr incomplete;
-                if ran_node_gen_timeout r then incr timeout;
-                if ran_node_gen_oomemory r then incr out_of_memory;
-                if ran_node_gen_notconverted r then incr not_converted;
-                if ran_node_gen_has_unknown r then incr unknown_utility;
-                if ran_node_gen_has_unexpected r then incr unexpected
-              | Complete -> incr complete)
-           package.Package.scenarii)
-      report.packages;
+    (
+      report.packages |> List.iter @@ fun package ->
+      package.Package.scenarii |> List.iter @@ fun (_name, scenario) ->
+      let open Model.Scenario in
+      match coverage scenario with
+      | Null r ->
+        if ran_node_gen_incomplete r then incr incomplete;
+        if ran_node_gen_timeout r then incr timeout;
+        if ran_node_gen_oomemory r then incr out_of_memory;
+        if ran_node_gen_notconverted r then incr not_converted;
+        if ran_node_gen_has_unknown r then incr unknown_utility;
+        if ran_node_gen_has_unexpected r then incr unexpected
+      | Partial r ->
+        incr partial;
+        if ran_node_gen_incomplete r then incr incomplete;
+        if ran_node_gen_timeout r then incr timeout;
+        if ran_node_gen_oomemory r then incr out_of_memory;
+        if ran_node_gen_notconverted r then incr not_converted;
+        if ran_node_gen_has_unknown r then incr unknown_utility;
+        if ran_node_gen_has_unexpected r then incr unexpected
+      | Complete -> incr complete
+    );
     let problems =
       !incomplete + !timeout + !out_of_memory
       + !not_converted + !unknown_utility + !unexpected
