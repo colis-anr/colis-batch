@@ -220,7 +220,7 @@ let pp_ran_as_dot ?name fmt sc = (* Summarized version maybe? *)
     if dec.notconverted then
       fpf fmt "<TR><TD>not converted</TD></TR>";
     if dec.unknown <> [] then
-      fpf fmt "<TR><TD>unsup. utility</TD></TR>";
+      fpf fmt "<TR><TD>unknown utility</TD></TR>";
     if dec.unexpected <> [] then
       fpf fmt "<TR><TD>unexpected exception</TD></TR>"
   in
