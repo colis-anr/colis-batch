@@ -144,7 +144,7 @@ let run ~cpu_timeout ~package scenario =
   in
   try
     Colis.Internals.Options.cpu_time_limit := Sys.time () +. cpu_timeout;
-    let root = Colis_constraints.Var.fresh ~hint:"r" () in
+    let root = Colis_constraints.Var.fresh () in
     let disj =
       Colis_constraints.Clause.with_shadow_variables @@ fun () ->
       Colis.SymbolicConstraints.add_fs_spec_to_clause root Colis_constraints.Clause.true_sat_conj fhs
