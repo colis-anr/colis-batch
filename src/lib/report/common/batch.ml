@@ -180,7 +180,7 @@ let enrich_scripts (report : t) : scripts =
               let nb_unknown =
                 utilities
                 |> List.map fst
-                |> List.filter (fnot Colis.SymbolicConstraints.is_registered)
+                |> List.filter (fun name -> not (Colis.SymbolicConstraints.is_registered ~name))
                 |> List.length
                 |> foi
               in
@@ -216,7 +216,7 @@ let enrich_scripts (report : t) : scripts =
                     @ utility.occurrences
                   in
                   let score =
-                    if Colis.SymbolicConstraints.is_registered name then
+                    if Colis.SymbolicConstraints.is_registered ~name then
                       0.
                     else
                       utility.score +. 1. /. nb_unknown
